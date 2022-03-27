@@ -44,8 +44,7 @@ class ChromeDriver:
         self.headless = headless
         with open(r'data-ranges.json', 'r') as f:
             self.ranges = json.load(f)
-        with open(r'cookie.dump', 'rb') as f:
-            self.cookies = pickle.load(f)
+        self.cookies = None
 
     def _create_driver(self):
         if not getattr(self, 'driver', None):
