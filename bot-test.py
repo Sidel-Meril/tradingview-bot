@@ -24,7 +24,7 @@ variables = {
 
 #init bot
 updater = Updater(variables['telegram']['token'], workers=10, use_context=True)
-PORT = int(os.environ.get('PORT', '8443'))
+# PORT = int(os.environ.get('PORT', '8443'))
 
 def common_user(func):
     def check_user(update, contex, *args, **kwargs):
