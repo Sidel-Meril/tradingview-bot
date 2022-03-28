@@ -334,12 +334,12 @@ def chngpayment(update, context):
     try:
         _, payment = update.message.text.repalce('/chngpayment','')
         db = sqlcon.Database(database_url=variables['database']['link'])
-        db.change_settings_payment(user_id, payment)
+        db.change_settings_payment(payment)
         db.close()
         message = """
     Реквизиты для оплаты обновлены:
      <pre>%s/pre>.
-                """ % (price)
+                """ % (payment)
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
     except:
         message = """
