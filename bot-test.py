@@ -276,34 +276,39 @@ def addpair(update, context):
 
 @admin
 def whois(update, context):
-    user_id = update.message.reply_to_message.forward_from.id
-    db = sqlcon.Database(database_url=variables['database']['link'])
-    data = db.get_users()
-    all_users = [row[0] for row in data]
+    try:
+        user_id = update.message.reply_to_message.forward_from.id
+        db = sqlcon.Database(database_url=variables['database']['link'])
+        data = db.get_users()
+        all_users = [row[0] for row in data]
+        db.close()
+        user_row = all_users.index(user_id) if user_id in all_users else None
 
-    user_row = all_users.index(user_id) if user_id in all_users else None
+        if user_row != None:
+            if data[user_row][1] == 'paid':
+                user, _, start, end = data[user_row]
+                updater.bot.send_message(variables['telegram']['admin_id'],
+                                         """Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
+                                         <pre>Подписка оформлена</pre>
+                                         <pre>%s / %s</pre>
+                                         <pre>Oсталось: %i %s</pre>""" %(user, user, date.fromtimestamp(start).isoformat(),date.fromtimestamp(end).isoformat(),
+                                   int((end-datetime.now().timestamp())/86280),
+                                   'дня' if str(int((end - datetime.now().timestamp())/86280))[-1] == '2' or
+                                            str(int((end - datetime.now().timestamp())/86280))[-1] == '3' or
+                                            str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4'else 'дней')
+                                         , parse_mode='HTML')
 
-    if user_row != None:
-        if data[user_row][1] == 'paid':
-            user, _, start, end = data[user_row]
-            updater.bot.send_message(variables['telegram']['admin_id'],
-                                     """Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-                                     <pre>Подписка оформлена</pre>
-                                     <pre>%s / %s</pre>
-                                     <pre>Oсталось: %i %s</pre>""" %(user, user, date.fromtimestamp(start).isoformat(),date.fromtimestamp(end).isoformat(),
-                               int((end-datetime.now().timestamp())/86280),
-                               'дня' if str(int((end - datetime.now().timestamp())/86280))[-1] == '2' or
-                                        str(int((end - datetime.now().timestamp())/86280))[-1] == '3' or
-                                        str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4'else 'дней')
-                                     , parse_mode='HTML')
-
+            else:
+                updater.bot.send_message(variables['telegram']['admin_id'],
+                                         """Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
+                                         <pre>Подписка не оформлена</pre>""" % (user_id), parse_mode='HTML')
         else:
             updater.bot.send_message(variables['telegram']['admin_id'],
-                                     """Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-                                     <pre>Подписка не оформлена</pre>""" % (user_id), parse_mode='HTML')
-    else:
+                                     """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id)
+                                     , parse_mode='HTML')
+    except:
         updater.bot.send_message(variables['telegram']['admin_id'],
-                                 """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id)
+                                 """Данную команду нужно использовать как ответ на сообщение интересующего вас пользователя.""" % (user_id)
                                  , parse_mode='HTML')
 
 @admin
