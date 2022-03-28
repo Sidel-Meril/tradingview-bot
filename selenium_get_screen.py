@@ -51,7 +51,7 @@ class ChromeDriver:
         if not getattr(self, 'driver', None):
             chromeOptions = webdriver.ChromeOptions()
             chromeOptions.binary_location = os.environ.get('CHROMEDRIVER_PATH')
-            chromeOptions.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
+            # chromeOptions.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
             # chromeOptions.add_argument("--no-sandbox")
             chromeOptions.add_argument("--disable-setuid-sandbox")
             chromeOptions.add_argument("--disable-dev-shm-usage")
