@@ -50,19 +50,13 @@ class ChromeDriver:
     def _create_driver(self):
         if not getattr(self, 'driver', None):
             chromeOptions = webdriver.ChromeOptions()
-            chromeOptions.binary_location = os.environ.get('CHROMEDRIVER_PATH')
-            # chromeOptions.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
-            # chromeOptions.add_argument("--no-sandbox")
-            chromeOptions.add_argument("--disable-setuid-sandbox")
-            chromeOptions.add_argument("--disable-dev-shm-usage")
-            chromeOptions.add_argument("--disable-extensions")
-            chromeOptions.add_argument("--disable-gpu")
-            # chromeOptions.add_argument("start-maximized")
-            # chromeOptions.add_argument("disable-infobars")
-            chromeOptions.add_argument("--headless")
-
-            self.driver = webdriver.Chrome(
-                executable_path=self.executable_path, options=chromeOptions, service_args=["--verbose"])
+            chrome_options = webdriver.ChromeOptions()
+            chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--no-sandbox")
+            self.driver = webdriver.Chrome(executable_path=os.environ.get("CHROMEDRIVER_PATH"),
+                                      chrome_options=chrome_options)
 
             self.driver.header_overrides = {
                 'User-Agent': random.choice(self.user_agents),
