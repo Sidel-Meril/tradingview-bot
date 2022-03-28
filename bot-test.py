@@ -66,6 +66,13 @@ def paid_plane_user(func):
             if user_plans[users.index(user_id)] != 'paid':
                 updater.bot.send_message(user_id,'Эта функция доступна только пользователям с платной подпиской. Нажмите /pay, чтобы оплатить.')
                 return False
+            else:
+                if datetime.now().timestamp()>data[users.index(user_id)][3]:
+                    db.edit_user_by_id(user_id,'free',0,0)
+                    updater.bot.send_message(user_id,
+                                             'Ваша подписка истекла. Нажмите /pay, чтобы оплатить.')
+
+                    return False
         db.close()
         func(update, contex, *args, **kwargs)
 
@@ -96,33 +103,6 @@ def listpairs():
 def req(update, context):
     user_id = update.message.chat.id
     message = """Введите правильно название пары и таймфрейм.
-<pre>Список таймфреймов:
-    
-minutes:
-1 minute: 1
-3 minutes: 3
-5 minutes: 5
-15 minutes: 15
-30 minutes: 30
-45 minutes: 45
-
-hours
-1 hour: 60
-2 hours: 120
-3 hours: 180
-4 hours: 240
-
-days: 
-1 hour: 1D
-2 hour: 1W
-3 hour: 1M
-
-ranges
-1 range: 1R,
-10 range: 10R
-100 ranges: 100R
-1000 ranges: 1000R
-    </pre>
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
     dp.add_handler(MessageHandler(telegram.ext.filters.Filters.text, get_screenshot))
@@ -157,6 +137,7 @@ def pay(update, context):
         message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
         """
         updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
+        return 0
 
     message=f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
     
