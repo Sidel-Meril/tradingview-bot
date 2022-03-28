@@ -3,7 +3,7 @@ from PIL import Image
 from io import StringIO, BytesIO
 import base64
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
@@ -49,7 +49,7 @@ class ChromeDriver:
 
     def _create_driver(self):
         if not getattr(self, 'driver', None):
-            chromeOptions = Options()
+            chromeOptions = webdriver.ChromeOptions()
             chromeOptions.binary_location = os.environ.get('CHROMEDRIVER_PATH')
             chromeOptions.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
             chromeOptions.add_argument("--no-sandbox")
@@ -62,7 +62,7 @@ class ChromeDriver:
             if self.headless == True: chromeOptions.add_argument("--headless")
 
             self.driver = webdriver.Chrome(
-                executable_path=self.executable_path, options=chromeOptions, service_args=["--verbose", "--log-path=qc1.log"])
+                executable_path=self.executable_path, options=chromeOptions)
 
             self.driver.header_overrides = {
                 'User-Agent': random.choice(self.user_agents),
