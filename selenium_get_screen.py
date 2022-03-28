@@ -11,6 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import pickle
 import random
 from time import sleep, time
+import os
 
 from selenium.webdriver.common.by import By
 
@@ -135,7 +136,7 @@ class ChromeDriver:
         return chat_window.screenshot_as_png
 
 def get_screenshot(symbol, interval):
-    examp = ChromeDriver('chromedriver.exe', 'cookie.dump', True)
+    examp = ChromeDriver(os.environ.get('CHROMEDRIVER_PATH'), 'cookie.dump', True)
     if next((False for item in examp.ranges.values() if interval in list(item.values())), True):
         return False
     link = 'https://www.tradingview.com/chart/?symbol={SYMBOL}&interval={interval}'.format(SYMBOL=symbol, interval=interval)

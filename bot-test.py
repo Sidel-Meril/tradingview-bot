@@ -24,7 +24,7 @@ variables = {
 
 #init bot
 updater = Updater(variables['telegram']['token'], workers=10, use_context=True)
-# PORT = int(os.environ.get('PORT', '8443'))
+PORT = int(os.environ.get('PORT', '8443'))
 
 def common_user(func):
     def check_user(update, contex, *args, **kwargs):
@@ -372,191 +372,6 @@ def adddays(update, context):
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
 
-#
-#
-# @user
-# def create_add_from_pic(update, context):
-#     user_id = update.message.chat.id
-#     print(update.message)
-#     try:
-#         file_id = update.message.photo[-1].file_id
-#     except:
-#         file_id = update.message.reply_to_message.photo[-1].file_id
-#     file = updater.dispatcher.bot.getFile(file_id)
-#     file_url = file.file_path
-#     user_pic = imageprocessing.get_img(file_url)
-#     db = sqlcon.Database(variables['database']['link'])
-#     add = db.get_random_pic()[0]
-#     result = imageprocessing.set_pic(user_pic, add[1], (add[2], add[3]), (add[4], add[5]))
-#     bio = imageprocessing.convert_to_bio(result)
-#     updater.dispatcher.bot.send_photo(chat_id=user_id, photo=bio)
-#
-# @user
-# def create_add_from_gif(update, context):
-#     user_id = update.message.chat.id
-#     try:
-#         file_id = update.message.animation.file_id
-#     except:
-#         file_id = update.message.reply_to_message.animation.file_id
-#     file = updater.dispatcher.bot.getFile(file_id)
-#     file_url = file.file_path
-#     user_gif = imageprocessing.get_gif(file_url)
-#     db = sqlcon.Database(variables['database']['link'])
-#     add = db.get_random_pic()[0]
-#     db.close()
-#     frames=imageprocessing.set_frames(user_gif, add[1], (add[2], add[3]), (add[4], add[5]))
-#     bio = imageprocessing.conver_gif_to_bio(frames)
-#     updater.dispatcher.bot.send_animation(chat_id=user_id, animation=bio)
-#
-# @user
-# def create_add_from_sticker(update, context):
-#     user_id = update.message.chat.id
-#     try:
-#         file_id = update.message.sticker.file_id
-#     except:
-#         file_id = update.message.reply_to_message.sticker.file_id
-#     file = updater.dispatcher.bot.getFile(file_id)
-#     file_url = file.file_path
-#     if 'webm' in file_url:
-#         user_gif = imageprocessing.get_gif(file_url)
-#         db = sqlcon.Database(variables['database']['link'])
-#         add = db.get_random_pic()[0]
-#         db.close()
-#         frames = imageprocessing.set_frames(user_gif, add[1], (add[2], add[3]), (add[4], add[5]))
-#         bio = imageprocessing.conver_gif_to_bio(frames)
-#     else:
-#         user_pic = imageprocessing.get_img(file_url)
-#         db = sqlcon.Database(variables['database']['link'])
-#         add = db.get_random_pic()[0]
-#         result = imageprocessing.set_pic(user_pic, add[1], (add[2], add[3]), (add[4], add[5]))
-#         bio = imageprocessing.convert_to_bio(result)
-#     updater.dispatcher.bot.send_photo(chat_id=user_id, photo=bio)
-#
-# @user
-# def suggest_message(update, context):
-#     user_id = update.message.chat.id
-#     #resend to admin
-#     try:
-#         updater.bot.forward_message(variables['telegram']['admin_id'], user_id, update.message.reply_to_message.message_id)
-#         updater.bot.send_message(user_id, "Звернення принято до уваги")
-#     except:
-#         updater.bot.send_message(user_id, "Холера, повідомлення не принято. [?] - /help")
-#
-#
-# @admin
-# def send_message_to_all_users(update, context):
-#     db = sqlcon.Database(database_url=variables['database']['link'])
-#     users = db.get_users()
-#     users = [user[0] for user in users]
-#     db.close()
-#     res_text = update.message.text.replace('/a_a_usrs','')
-#     user_count = 0
-#     for user_id in users:
-#         user_count += 1
-#         try:
-#             updater.bot.send_message(chat_id=user_id, text=res_text, parse_mode='HTML')
-#             updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<pre>Повідомлення надіслано до %i користувачів</pre>" %user_count,
-#                                      parse_mode='HTML')
-#         except:
-#             updater.bot.send_message(chat_id=variables['telegram']['admin_id'],
-#                                      text="<pre>Користувач під номером %i видалив бота</pre>" % user_count,
-#                                      parse_mode='HTML')
-#
-# @admin
-# def get_stats(update, context):
-#     stats = """
-#     Total user count: %i
-#     Total pics: %i
-#     """
-#     db = sqlcon.Database(database_url=variables['database']['link'])
-#     users = db.get_users()
-#     pics = db.get_all_pics()
-#     db.close()
-#
-#     res_markdown = """Статистика користування ботом:
-#
-# <pre>Унікальних користувачів</pre> - <b>%i</b>
-# <pre>Зображень у базі данних</pre> - <b>%i</b>""" %(len(users), len(pics))
-#
-#     updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=res_markdown, parse_mode='HTML')
-#
-# @admin
-# def add_pic_to_db(update,context):
-#     try:
-#         file_id = update.message.photo[-1].file_id
-#     except:
-#         file_id = update.message.reply_to_message.photo[-1].file_id
-#     file = updater.dispatcher.bot.getFile(file_id)
-#     file_url = file.file_path
-#
-#     db = sqlcon.Database(database_url=variables['database']['link'])
-#
-#     w_size, w_point = imageprocessing.get_coords(file_url)
-#     db.add_pic(file_url, w_size, w_point)
-#
-#     db.close()
-#
-#     get_stats(update, context)
-#
-# def text_processing(update,context):
-#     if '/del_p_adm_id_' in update.message.text:
-#         del_pic_from_db(update, context)
-#     else:
-#         sample_res = [
-#             """
-# Хочу побажати тобі успіхів, щоб твій ангел-зберігач берег тебе від зла та заздрощів, ворогів і недоброзичливців, підлості і користі. Скінь якусь фотку або зроби реплай на повідомлення з фоткою і вкажи в відповіді <pre>/pic</pre> :^)
-#             """,
-#             """
-# День схожий на дитячу гру-головоломку пазли. Адже полотно дня виткане з маленьких кольорових фрагментів. Можеш скинути якусь гіфку або якщо вже маєш в цьому чаті таку - зроби реплай на повідомлення з gif та вкажи команду <pre>/gif</pre> 8^)
-#             """,
-#             """
-# Не знаю, як ти, але я завжди прокидаюся з відмінним настроєм, тому що розумію, що починається новий день, а значить, що можна встигнути стільки всього зробити за цей час, щоб потім пишатися собою. Можеш надіслати стікер або зробити реплай на повідомлення з стікером і вказати в відповіді <pre>/stc</pre> xD
-#             """,
-#             """
-# Дорогий, шлю тобі смс тонну гарного настрою В-) Не надсилай сюди текст, якщо не розумієш як користуватись, натисни сюди - /help
-#             """,
-#             """
-# Свічка не гасне, зміцнюється надія, Хай радість буде в серці і блаженний мир, нехай Завжди будуть білосніжними одягу, Щоб трубний годину Господь покликав на шлюбний бенкет. Цей бот не опрацьовує текст :-Ь
-#             """,
-#             """
-# Я б хотів зібрати в один букет все квіти світу, щоб кинути їх сьогодні до твоїх ніг. Подякувати Бога можна через <pre>/sug</pre>: зробіть реплай на повідомлення, яке бажаєте преслати.
-#             """
-#         ]
-#         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=random.choice(sample_res), parse_mode='HTML')
-#
-# @admin
-# def del_pic_from_db(update, context):
-#     db = sqlcon.Database(variables['telegram']['link'])
-#     db.delete_pic_by_id(int(update.message.text.replace('/del_p_adm_id_','')))
-#     db.close()
-#
-#     updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<pre>Зображення видалено.</pre>", parse_mode='HTML')
-#     get_stats(update, context)
-#
-#
-# @admin
-# def get_all_pics_from_db(update, context):
-#     type_msg = 'text'
-#     db = sqlcon.Database(database_url=variables['database']['link'])
-#     res = db.get_all_pics()
-#     if type_msg == 'text':
-#         res_markdown=['<pre>Зображення у базі данних</pre>\n']
-#         res_markdown.extend(["""<a href="%s">[id %i]</a> - /del_p_adm_id_%i """ %(line[1], line[0], line[0]) for line in res])
-#         db.close()
-#         counter = 0
-#         while True:
-#             try:
-#                 counter+=1
-#                 print(counter)
-#                 updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text='\n'.join(res_markdown[20*counter:20*(counter+1)]), parse_mode='HTML')
-#             except:
-#                 # updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text='\n'.join(res_markdown[20*counter:]), parse_mode='HTML')
-#                 break
-#     elif type_msg == 'pic':
-#         for line in res:
-#             print(line[0])
-#             updater.bot.send_photo(chat_id=variables['telegram']['admin_id'], photo=line[1], caption='/del_p_adm_id_%i' %(line[0]), parse_mode='HTML')
-
 
 if __name__=="__main__":
     job_queue = updater.job_queue
@@ -599,6 +414,10 @@ if __name__=="__main__":
     /whois - узнать id_пользователя
     
     """
-    updater.start_polling()
+    updater.start_webhook(listen="0.0.0.0",
+                          port=PORT,
+                          url_path=variables['telegram']['token'],
+                        webhook_url = 'https://murmuring-inlet-95645.herokuapp.com/' + variables['telegram']['token'])
     updater.idle()
+
 
