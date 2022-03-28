@@ -301,14 +301,14 @@ def whois(update, context):
             else:
                 updater.bot.send_message(variables['telegram']['admin_id'],
                                          """Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-                                         <pre>Подписка не оформлена</pre>""" % (user_id), parse_mode='HTML')
+                                         <pre>Подписка не оформлена</pre>""" % (user_id, user_id), parse_mode='HTML')
         else:
             updater.bot.send_message(variables['telegram']['admin_id'],
-                                     """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id)
+                                     """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id,user_id)
                                      , parse_mode='HTML')
     except:
         updater.bot.send_message(variables['telegram']['admin_id'],
-                                 """Данную команду нужно использовать как ответ на сообщение интересующего вас пользователя.""" % (user_id)
+                                 """Данную команду нужно использовать как ответ на сообщение интересующего вас пользователя."""
                                  , parse_mode='HTML')
 
 @admin
