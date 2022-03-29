@@ -150,14 +150,22 @@ def get_screenshot(update, context):
 @common_user
 def ask(update, context):
     user_id = update.message.chat.id
-    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} {os.environ["ADMIN_ID"]}')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    updater.bot.send_message(variables['telegram']['admin_id'], text="""<b>Сообщение от пользователя</b>
-%s
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ваше сообщение для администрации.""",
+                             parse_mode='HTML')
+    def user_message(update, message, user_id=user_id):
+        user_message = update.message.text
+        keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} {os.environ["ADMIN_ID"]}')]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        updater.bot.send_message(variables['telegram']['admin_id'], text="""<b>Сообщение от пользователя</b>
+        %s
 
-<i>%s</i>    
-    """ %(get_info(user_id),update.message.text.replace('/ask','')), parse_mode='HTML', reply_markup=reply_markup)
-    updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение оператору. Ожидайте ответа.")
+        <i>%s</i>    
+            """ % (get_info(user_id), user_message), parse_mode='HTML',
+                                 reply_markup=reply_markup)
+        updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение администратору. Ожидайте ответа.")
+
+    dp.add_handler(MessageHandler(filters.Filters.text, user_message))
+
 
 
 @common_user
