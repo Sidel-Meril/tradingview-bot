@@ -182,7 +182,8 @@ def check_pay(update, context):
     keyboard = [[InlineKeyboardButton('Принять', callback_data=accept(update, context)),
                  InlineKeyboardButton('Отклонить',callback_data=decline(update, context))]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    updater.bot.forward_message(variables['telegram']['admin_id'], user_id, update.message.message_id, reply_markup=reply_markup)
+    updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
+                           caption=f"""Скриншот оплаты от пользователя <a href="tg://user?id=%i">id%i</a>""" %user_id, parse_mode='HTML', reply_markup=reply_markup)
     updater.bot.send_message(user_id, "Скриншот отправлен на рассмотрение оператору. Ожидайте ответа.")
     # dp.add_handler(CommandHandler("accept", accept))
     # dp.add_handler(CommandHandler("decline", decline))
