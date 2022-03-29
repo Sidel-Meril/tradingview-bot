@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-import telegram.ext
 import os
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, MessageHandler, CommandHandler, CallbackQueryHandler, CallbackContext, filters
 from telegram.ext.dispatcher import run_async
 import json
 import random
@@ -84,10 +84,25 @@ def admin(func):
         print(user_id, variables['telegram']['admin_id'], user_id == variables['telegram']['admin_id'])
         if user_id != variables['telegram']['admin_id']:
             return None
-        print('Hi, my little queen Sidel Meril')
+        print('Hi, Admin')
         res = func(update, context, *args, **kwargs)
         return res
     return wrapper
+
+
+def test(update: Update, context: CallbackContext) -> None:
+    """Sends a message with three inline buttons attached."""
+    keyboard = [
+        [
+            InlineKeyboardButton("Option 1", callback_data='1'),
+            InlineKeyboardButton("Option 2", callback_data='2'),
+        ],
+        [InlineKeyboardButton("Option 3", callback_data='3')],
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text('Please choose:', reply_markup=reply_markup)
 
 @common_user
 def start(update, context):
@@ -97,15 +112,27 @@ def start(update, context):
     else:
         user_help(update, context)
 
+@admin
 def listpairs():
-    pass
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    data = db.get_pairs()
+    db.close()
+    message_rows = [f"""<pre>{exchange}:{symbol}</pre>""" for symbol, exchange in data]
+    message = f"""
+    <pre>Всего пар: {len(data)}</pre>
+
+    Пары, по которым доступен поиск:
+
+    """ + ('\n').join(message_rows)
+
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
 def req(update, context):
     user_id = update.message.chat.id
     message = """Введите правильно название пары и таймфрейм.
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-    dp.add_handler(MessageHandler(telegram.ext.filters.Filters.text, get_screenshot))
+    dp.add_handler(MessageHandler(filters.Filters.text, get_screenshot))
 
 @paid_plane_user
 def get_screenshot(update, context):
@@ -147,7 +174,7 @@ def pay(update, context):
 Пришлите скриншот оплаты (квитанцию) боту в чат, и он активирует Вам доступ.
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-    updater.dispatcher.add_handler(MessageHandler(telegram.ext.filters.Filters.photo, check_pay))
+    updater.dispatcher.add_handler(MessageHandler(filters.Filters.photo, check_pay))
 
 @common_user
 def check_pay(update, context):
@@ -253,7 +280,21 @@ def writeall(update, context):
 
 @admin
 def addpair(update, context):
-    pass
+    try:
+        _, exchange, symbol = update.message.text.split(' ')
+        db = sqlcon.Database(database_url=variables['database']['link'])
+        db.add_pair(exchange, symbol)
+        db.close()
+        message = """
+    Пара <b>%s:%s</b> добавлена.
+                """ % (exchange,symbol)
+        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+    except:
+        message = """
+            Введите запрос в формате:
+            <pre>/addpair exchange symbol</pre>
+                """
+        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
 @admin
 def whois(update, context):
@@ -294,7 +335,21 @@ def whois(update, context):
 
 @admin
 def deletepair(update, context):
-    pass
+    try:
+        _, exchange, symbol = update.message.text.split(' ')
+        db = sqlcon.Database(database_url=variables['database']['link'])
+        db.del_pair(symbol)
+        db.close()
+        message = """
+    Пара <b>%s:%s</b> удалена.
+                """ % (exchange,symbol)
+        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+    except:
+        message = """
+            Введите запрос в формате:
+            <pre>/deletepair exchange symbol</pre>
+                """
+        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
 @admin
 def chngprice(update, context):
@@ -302,7 +357,7 @@ def chngprice(update, context):
         _, price = update.message.text.split(' ')
         price = int(price)
         db = sqlcon.Database(database_url=variables['database']['link'])
-        db.change_settings_price(user_id, price)
+        db.change_settings_price(price)
         db.close()
         message = """
     Цена подписки теперь <b>%i долларов</b>.
@@ -388,6 +443,7 @@ if __name__=="__main__":
     dp.add_handler(CommandHandler("chngpayment", chngpayment))
     dp.add_handler(CommandHandler("adddays", adddays))
     dp.add_handler(CommandHandler("whois", whois))
+    dp.add_handler(CommandHandler("test", test))
 
     """
     /paid - список оплативших - показывает когда и кто оплачивал и (в скобках желательно писать сколько кому осталось)

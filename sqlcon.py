@@ -137,6 +137,13 @@ class Database:
         self.cur.execute(query)
         self.conn.commit()
 
+    @_conn
+    def del_pair(self, symbol):
+        query="""DELETE FROM sources WHERE symbol = '%s';
+        """ %symbol
+
+        self.cur.execute(query)
+        self.conn.commit()
 
     @_conn
     def get_users(self):
