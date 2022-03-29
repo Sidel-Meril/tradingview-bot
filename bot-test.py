@@ -200,10 +200,10 @@ def screenshot_check(update: Update, context: CallbackContext) -> None:
     query.answer()
     if 'accept' in query.data:
         _, user_id, __ = query.data.split(' ')
-        accept(user_id)
+        accept(int(user_id))
     elif 'decline' in query.data:
         _, user_id, __ = query.data.split(' ')
-        decline(user_id)
+        decline(int(user_id))
 
 def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
