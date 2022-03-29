@@ -179,8 +179,8 @@ def pay(update, context):
 @common_user
 def check_pay(update, context):
     user_id = update.message.chat.id
-    keyboard = [[InlineKeyboardButton('Принять', callback_data=accept(update, context)),
-                 InlineKeyboardButton('Отклонить',callback_data=decline(update, context))]]
+    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id}'),
+                 InlineKeyboardButton('Отклонить',callback_data=f'decline {user_id}')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     try:
         updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
@@ -194,9 +194,19 @@ def check_pay(update, context):
     # dp.add_handler(CommandHandler("decline", decline))
 
 @admin
-def accept(update, context):
-    print(update.message)
-    user_id = update.message.user_id
+def screenshot_check(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    query.answer()
+    if 'accept' in query.data:
+        _, user_id = query.data.split(' ')
+        accept(user_id)
+    elif 'accept' in query.data:
+        _, user_id = query.data.split(' ')
+        decline(user_id)
+
+def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     _, price, duration, payment_data = db.get_settings()[0]
     _duration = duration*86280
@@ -205,10 +215,7 @@ def accept(update, context):
     updater.bot.send_message(variables['telegram']['admin_id'],
                              "Запрос принят. Уведомление успешно доставлено пользователю %i." % (user_id))
 
-@admin
-def decline(update, context):
-    print(update.message)
-    user_id = update.message.user_id
+def decline(user_id):
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
     updater.bot.send_message(variables['telegram']['admin_id'], "Запрос отклонен. Уведомление успешно доставлено пользователю %i." %(user_id))
 
@@ -467,6 +474,9 @@ if __name__=="__main__":
     /whois - узнать id_пользователя
     
     """
+
+    updater.dispatcher.add_handler(CallbackQueryHandler(screenshot_check))
+
     updater.start_webhook(listen="0.0.0.0",
                           port=PORT,
                           url_path=variables['telegram']['token'],
