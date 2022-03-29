@@ -513,7 +513,7 @@ if __name__=="__main__":
     
     """
 
-    updater.dispatcher.add_handler(CallbackQueryHandler(screenshot_check))
+    updater.dispatcher.add_handler(CallbackQueryHandler(buttons))
 
     updater.start_webhook(listen="0.0.0.0",
                           port=PORT,
