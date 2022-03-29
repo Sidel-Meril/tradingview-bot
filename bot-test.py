@@ -179,8 +179,8 @@ def pay(update, context):
 @common_user
 def check_pay(update, context):
     user_id = update.message.chat.id
-    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id}'),
-                 InlineKeyboardButton('Отклонить',callback_data=f'decline {user_id}')]]
+    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id} {os.environ["ADMIN_ID"]}'),
+                 InlineKeyboardButton('Отклонить',callback_data=f'decline {user_id} {os.environ["ADMIN_ID"]}')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     try:
         updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
@@ -199,10 +199,10 @@ def screenshot_check(update: Update, context: CallbackContext) -> None:
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     query.answer()
     if 'accept' in query.data:
-        _, user_id = query.data.split(' ')
+        _, user_id, __ = query.data.split(' ')
         accept(user_id)
-    elif 'accept' in query.data:
-        _, user_id = query.data.split(' ')
+    elif 'decline' in query.data:
+        _, user_id, __ = query.data.split(' ')
         decline(user_id)
 
 def accept(user_id):
