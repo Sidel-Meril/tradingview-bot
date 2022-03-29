@@ -147,8 +147,17 @@ def get_screenshot(update, context):
         print(e)
         updater.bot.send_message(chat_id=user_id, text="Ничего не найдено :( Введите название пары/таймфрейма правильно", parse_mode='HTML')
 
-def ask():
-    pass
+@common_user
+def ask(update, context):
+    user_id = update.message.chat.id
+    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'Reply to {user_id} {os.environ["ADMIN_ID"]}')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    updater.bot.send_message(variables['telegram']['admin_id'], text="""<b>Сообщение от пользователя</b>
+%s
+
+<i>%s</i>    
+    """ %(get_info(user_id),update.message.text), parse_mode='HTML', reply_markup=reply_markup)
+    updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение оператору. Ожидайте ответа.")
 
 
 @common_user
@@ -313,38 +322,42 @@ def addpair(update, context):
                 """
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
+
+def get_info(user_id):
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    data = db.get_users()
+    all_users = [row[0] for row in data]
+    db.close()
+    user_row = all_users.index(user_id) if user_id in all_users else None
+
+    if user_row != None:
+        if data[user_row][1] == 'paid':
+            user, _, start, end = data[user_row]
+            info = """
+    Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
+    <pre>Подписка оформлена</pre>
+    <pre>%s / %s</pre>
+    <pre>Oсталось: %i %s</pre>""" % (
+            user, user, date.fromtimestamp(start).isoformat(), date.fromtimestamp(end).isoformat(),
+            int((end - datetime.now().timestamp()) / 86280),
+            'дня' if str(int((end - datetime.now().timestamp()) / 86280))[-1] == '2' or
+                     str(int((end - datetime.now().timestamp()) / 86280))[-1] == '3' or
+                     str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4' else 'дней')
+        else:
+            info = """
+    Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
+    <pre>Подписка не оформлена</pre>""" % (user_id, user_id)
+    else:
+        info = """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id, user_id)
+
+    return info
+
 @admin
 def whois(update, context):
     try:
         user_id = update.message.reply_to_message.forward_from.id
-        db = sqlcon.Database(database_url=variables['database']['link'])
-        data = db.get_users()
-        all_users = [row[0] for row in data]
-        db.close()
-        user_row = all_users.index(user_id) if user_id in all_users else None
-
-        if user_row != None:
-            if data[user_row][1] == 'paid':
-                user, _, start, end = data[user_row]
-                updater.bot.send_message(variables['telegram']['admin_id'],
-                                         """Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-                                         <pre>Подписка оформлена</pre>
-                                         <pre>%s / %s</pre>
-                                         <pre>Oсталось: %i %s</pre>""" %(user, user, date.fromtimestamp(start).isoformat(),date.fromtimestamp(end).isoformat(),
-                                   int((end-datetime.now().timestamp())/86280),
-                                   'дня' if str(int((end - datetime.now().timestamp())/86280))[-1] == '2' or
-                                            str(int((end - datetime.now().timestamp())/86280))[-1] == '3' or
-                                            str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4'else 'дней')
-                                         , parse_mode='HTML')
-
-            else:
-                updater.bot.send_message(variables['telegram']['admin_id'],
-                                         """Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-                                         <pre>Подписка не оформлена</pre>""" % (user_id, user_id), parse_mode='HTML')
-        else:
-            updater.bot.send_message(variables['telegram']['admin_id'],
-                                     """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id,user_id)
-                                     , parse_mode='HTML')
+        info = get_info(user_id)
+        updater.bot.send_message(variables['telegram']['admin_id'], info, parse_mode='HTML')
     except:
         updater.bot.send_message(variables['telegram']['admin_id'],
                                  """Данную команду нужно использовать как ответ на сообщение интересующего вас пользователя."""
