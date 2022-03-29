@@ -179,14 +179,18 @@ def pay(update, context):
 @common_user
 def check_pay(update, context):
     user_id = update.message.chat.id
-    updater.bot.forward_message(variables['telegram']['admin_id'], user_id, update.message.message_id)
+    keyboard = [[InlineKeyboardButton('Принять', callback_data=accept(update, context)),
+                 InlineKeyboardButton('Отклонить',callback_data=decline(update, context))]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    updater.bot.forward_message(variables['telegram']['admin_id'], user_id, update.message.message_id, reply_markup=reply_markup)
     updater.bot.send_message(user_id, "Скриншот отправлен на рассмотрение оператору. Ожидайте ответа.")
-    dp.add_handler(CommandHandler("accept", accept))
-    dp.add_handler(CommandHandler("decline", decline))
+    # dp.add_handler(CommandHandler("accept", accept))
+    # dp.add_handler(CommandHandler("decline", decline))
 
 @admin
 def accept(update, context):
-    user_id = update.message.reply_to_message.forward_from.id
+    print(update.message)
+    user_id = update.message.user_id
     db = sqlcon.Database(database_url=variables['database']['link'])
     _, price, duration, payment_data = db.get_settings()[0]
     _duration = duration*86280
@@ -197,7 +201,8 @@ def accept(update, context):
 
 @admin
 def decline(update, context):
-    user_id = update.message.reply_to_message.forward_from.id
+    print(update.message)
+    user_id = update.message.user_id
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
     updater.bot.send_message(variables['telegram']['admin_id'], "Запрос отклонен. Уведомление успешно доставлено пользователю %i." %(user_id))
 
