@@ -193,7 +193,6 @@ def check_pay(update, context):
     # dp.add_handler(CommandHandler("accept", accept))
     # dp.add_handler(CommandHandler("decline", decline))
 
-@admin
 def screenshot_check(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     # CallbackQueries need to be answered, even if no notification to the user is needed
