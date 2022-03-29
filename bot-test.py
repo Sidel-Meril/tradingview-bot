@@ -150,13 +150,13 @@ def get_screenshot(update, context):
 @common_user
 def ask(update, context):
     user_id = update.message.chat.id
-    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'Reply to {user_id} {os.environ["ADMIN_ID"]}')]]
+    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} {os.environ["ADMIN_ID"]}')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     updater.bot.send_message(variables['telegram']['admin_id'], text="""<b>Сообщение от пользователя</b>
 %s
 
 <i>%s</i>    
-    """ %(get_info(user_id),update.message.text), parse_mode='HTML', reply_markup=reply_markup)
+    """ %(get_info(user_id),update.message.text.replace('/ask','')), parse_mode='HTML', reply_markup=reply_markup)
     updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение оператору. Ожидайте ответа.")
 
 
@@ -193,7 +193,7 @@ def check_pay(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     try:
         updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
-                               caption=f"""Скриншот оплаты от пользователя <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id), parse_mode='HTML', reply_markup=reply_markup)
+                               caption="""Скриншот оплаты от пользователя <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id), parse_mode='HTML', reply_markup=reply_markup)
         updater.bot.send_message(user_id, "Скриншот отправлен на рассмотрение оператору. Ожидайте ответа.")
     except Exception as e:
         print(e)
@@ -202,7 +202,7 @@ def check_pay(update, context):
     # dp.add_handler(CommandHandler("accept", accept))
     # dp.add_handler(CommandHandler("decline", decline))
 
-def screenshot_check(update: Update, context: CallbackContext) -> None:
+def buttons(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     # CallbackQueries need to be answered, even if no notification to the user is needed
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
@@ -213,6 +213,24 @@ def screenshot_check(update: Update, context: CallbackContext) -> None:
     elif 'decline' in query.data:
         _, user_id, __ = query.data.split(' ')
         decline(int(user_id))
+    elif 'reply_to' in query.data:
+        _, user_id, __ = query.data.split(' ')
+        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""", parse_mode='HTML')
+        @admin
+        def answer(update, message, user_id=user_id):
+            answer = update.message.text
+            updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
+                                     parse_mode='HTML')
+            updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id),
+                                     parse_mode='HTML')
+
+        dp.add_handler(MessageHandler(filters.Filters.text, answer))
+
+
+
+
+
+
 
 def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
@@ -231,14 +249,14 @@ def decline(user_id):
 def admin_help(update, context):
     user_id = update.message.chat.id
     help_message = """
-    /paid - список оплативших - показывает когда и кто оплачивал и (в скобках желательно писать сколько кому осталось)
-    /writeall - сделать всем рассылку - можно разослать какую-либо новость всем и сразу
-    /addpair - добавить символ пары - с помощью команды, админ может добавить в список доступных пар новую
-    /deletepair - удалить символ пары - с помощью команды, админ может удалить из списка доступных пар старую и ненужную,
-    /chngprice - сменить цену подписки - бот пишет после нажатия: Введите новую цену в долл. Админ пишет xx и отправляет. Бот пишет: цена изменена.
-    /chngpayment - сменить реквизиты оплаты - аналогично как с ценой.
-    /adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
-    /whois - узнать id_пользователя
+/paid - список оплативших - показывает когда и кто оплачивал и (в скобках желательно писать сколько кому осталось)
+/writeall - сделать всем рассылку - можно разослать какую-либо новость всем и сразу
+/addpair - добавить символ пары - с помощью команды, админ может добавить в список доступных пар новую
+/deletepair - удалить символ пары - с помощью команды, админ может удалить из списка доступных пар старую и ненужную,
+/chngprice - сменить цену подписки - бот пишет после нажатия: Введите новую цену в долл. Админ пишет xx и отправляет. Бот пишет: цена изменена.
+/chngpayment - сменить реквизиты оплаты - аналогично как с ценой.
+/adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
+/whois - узнать id_пользователя
     """
 
     updater.bot.send_message(chat_id=user_id, text=help_message)
@@ -247,10 +265,10 @@ def admin_help(update, context):
 def user_help(update, context):
     user_id = update.message.chat.id
     help_message = """
-    /listpairs - список торговых пар
-    /pay - оплатить подписку
-    /request - запросить скриншот
-    /ask - задать вопрос
+/listpairs - список торговых пар
+/pay - оплатить подписку
+/request - запросить скриншот
+/ask - задать вопрос
     """
     # set parse message mood
 
@@ -312,13 +330,13 @@ def addpair(update, context):
         db.add_pair(exchange, symbol)
         db.close()
         message = """
-    Пара <b>%s:%s</b> добавлена.
+Пара <b>%s:%s</b> добавлена.
                 """ % (exchange,symbol)
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
     except:
         message = """
-            Введите запрос в формате:
-            <pre>/addpair exchange symbol</pre>
+Введите запрос в формате:
+<pre>/addpair exchange symbol</pre>
                 """
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
@@ -334,10 +352,10 @@ def get_info(user_id):
         if data[user_row][1] == 'paid':
             user, _, start, end = data[user_row]
             info = """
-    Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-    <pre>Подписка оформлена</pre>
-    <pre>%s / %s</pre>
-    <pre>Oсталось: %i %s</pre>""" % (
+Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
+<pre>Подписка оформлена</pre>
+<pre>%s / %s</pre>
+<pre>Oсталось: %i %s</pre>""" % (
             user, user, date.fromtimestamp(start).isoformat(), date.fromtimestamp(end).isoformat(),
             int((end - datetime.now().timestamp()) / 86280),
             'дня' if str(int((end - datetime.now().timestamp()) / 86280))[-1] == '2' or
@@ -345,8 +363,8 @@ def get_info(user_id):
                      str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4' else 'дней')
         else:
             info = """
-    Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-    <pre>Подписка не оформлена</pre>""" % (user_id, user_id)
+Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
+<pre>Подписка не оформлена</pre>""" % (user_id, user_id)
     else:
         info = """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id, user_id)
 
@@ -371,13 +389,13 @@ def deletepair(update, context):
         db.del_pair(symbol)
         db.close()
         message = """
-    Пара <b>%s:%s</b> удалена.
+Пара <b>%s:%s</b> удалена.
                 """ % (exchange,symbol)
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
     except:
         message = """
-            Введите запрос в формате:
-            <pre>/deletepair exchange symbol</pre>
+Введите запрос в формате:
+<pre>/deletepair exchange symbol</pre>
                 """
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
@@ -390,13 +408,13 @@ def chngprice(update, context):
         db.change_settings_price(price)
         db.close()
         message = """
-    Цена подписки теперь <b>%i долларов</b>.
+Цена подписки теперь <b>%i долларов</b>.
                 """ % (price)
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
     except:
         message = """
-            Введите запрос в формате:
-            <pre>/chngprice цена(только число)</pre>
+Введите запрос в формате:
+<pre>/chngprice цена(только число)</pre>
                 """
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
