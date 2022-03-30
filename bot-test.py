@@ -450,7 +450,7 @@ def chngprice(update, context, admin_id):
 @admin
 def chngpayment(update, context, admin_id):
     try:
-        _, payment = update.message.text.replace('/chngpayment','')
+        payment = update.message.text.replace('/chngpayment','')
         db = sqlcon.Database(database_url=variables['database']['link'])
         db.change_settings('payment')
         db.close()
