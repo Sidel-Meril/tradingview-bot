@@ -183,7 +183,7 @@ def pay_request(update, context):
     data = db.get_users()
     users = [user[0] for user in data]
     user_plans = [user[1] for user in data]
-    price, duration, payment_data = db.get_setting('price'), db.get_setting('term'), db.get_setting('payment')
+    price, duration, payment_data = int(db.get_setting('price')), db.get_setting('term'), int(db.get_setting('payment'))
     db.close()
     if user_plans[users.index(user_id)] == 'paid':
         message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
@@ -226,7 +226,7 @@ def cancel(update, context):
 
 def pay_buttons(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    admin_id = update.callback_query.from_user
+    admin_id = update.callback_query.from_user.id
     print('Button ', admin_id)
     query.answer()
     if 'accept' in query.data:
@@ -254,7 +254,7 @@ def answer_response(update, context, admin_id):
 
 def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
-    price, duration, payment_data = db.get_setting('price'), db.get_setting('term'), db.get_setting('payment')
+    price, duration, payment_data = int(db.get_setting('price')), db.get_setting('term'), int(db.get_setting('payment'))
     _duration = duration*86280
     db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp())+_duration)
     admin_ids = [row[0] for row in db.get_admins()]
