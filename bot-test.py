@@ -183,7 +183,7 @@ def pay_request(update, context):
     data = db.get_users()
     users = [user[0] for user in data]
     user_plans = [user[1] for user in data]
-    _, price, duration, payment_data = db.get_settings()[0]
+    price, duration, payment_data = db.get_setting('price'), db.get_setting('term'), db.get_setting('payment')
     db.close()
     if user_plans[users.index(user_id)] == 'paid':
         message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
@@ -341,11 +341,11 @@ def writeall(update, context, admin_id):
         try:
             updater.bot.send_message(chat_id=user_id, text=res_text, parse_mode='HTML')
             updater.bot.send_message(chat_id=admin_id,
-                                     text="""Сообщение пользователю <a href="tg://user?id=%i">id%i</a> досталено.""" % user_id,
+                                     text="""Сообщение пользователю <a href="tg://user?id=%i">id%i</a> досталено.""" % (user_id,user_id),
                                      parse_mode='HTML')
         except:
             updater.bot.send_message(chat_id=admin_id,
-                                     text="""Пользователь <a href="tg://user?id=%i">id%i</a> удалил бота, но останется в базе для статистики.""" % user_id,
+                                     text="""Пользователь <a href="tg://user?id=%i">id%i</a> удалил бота, но останется в базе для статистики.""" % (user_id,user_id),
                                      parse_mode='HTML')
 
 
@@ -438,7 +438,8 @@ def chngprice(update, context, admin_id):
 Цена подписки теперь <b>%i долларов</b>.
                 """ % (price)
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-    except:
+    except Exception as e:
+        print(e)
         message = """
 Введите запрос в формате:
 <pre>/chngprice цена(только число)</pre>
@@ -457,7 +458,8 @@ def chngpayment(update, context, admin_id):
      <pre>%s/pre>.
                 """ % (payment)
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-    except:
+    except Exception as e:
+        print(e)
         message = """
             Введите запрос в формате:
             <pre>/chngpayment реквизиты</pre>
