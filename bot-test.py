@@ -220,12 +220,7 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
     elif 'decline' in query.data:
         _, user_id, __ = query.data.split(' ')
         decline(int(user_id))
-
-def answer_buttons(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
-
-    if 'reply_to' in query.data:
+    elif 'reply_to' in query.data:
         global user_id_to_response
         _, user_id_to_response, __ = query.data.split(' ')
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""", parse_mode='HTML')
@@ -502,7 +497,7 @@ if __name__=="__main__":
                                            },
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )
-    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_buttons)],
+    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(pay_buttons)],
                                            states={
                                                ANSWER_RESPONSE:[MessageHandler(Filters.text, answer_response)],
                                            },

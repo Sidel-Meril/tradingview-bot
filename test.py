@@ -221,7 +221,7 @@ def cancel(update, context):
     return ConversationHandler.END
 
 
-def pay_buttons(update: Update, context: CallbackContext) -> None:
+def pay_buttons(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
     if 'accept' in query.data:
@@ -230,6 +230,13 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
     elif 'decline' in query.data:
         _, user_id, __ = query.data.split(' ')
         decline(int(user_id))
+    elif 'reply_to' in query.data:
+        global user_id_to_response
+        _, user_id_to_response, __ = query.data.split(' ')
+        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""",
+                                 parse_mode='HTML')
+
+        return ANSWER_RESPONSE
 
 
 def answer_buttons(update: Update, context: CallbackContext):
@@ -249,13 +256,9 @@ def answer_buttons(update: Update, context: CallbackContext):
 def answer_response(update, context):
     global user_id_to_response
     answer = update.message.text
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'],
-                             text="<b>Ответ администратора на Ваше сообщение</b>\n" + answer,
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
                              parse_mode='HTML')
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'],
-                             text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" % (
-                             user_id_to_response,
-                             user_id_to_response),
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=f"""Вы ответили пользователю <a href="tg://user?id={user_id_to_response}">id{user_id_to_response}</a>""",
                              parse_mode='HTML')
     user_id_to_response = None
     return ConversationHandler.END
@@ -264,21 +267,16 @@ def answer_response(update, context):
 def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     _, price, duration, payment_data = db.get_settings()[0]
-    _duration = duration * 86280
-    db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp()) + _duration)
+    _duration = duration*86280
+    db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp())+_duration)
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята")
     updater.bot.send_message(variables['telegram']['admin_id'],
-                             """Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (
-                                 user_id, user_id), parse_mode='HTML')
-
+                             f"""Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id={user_id}">id{user_id}</a>""", parse_mode='HTML')
 
 def decline(user_id):
-    updater.bot.send_message(user_id,
-                             "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
-    updater.bot.send_message(variables['telegram']['admin_id'],
-                             """Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (
-                                 user_id, user_id),
-                             parse_mode='HTML')
+    updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
+    updater.bot.send_message(variables['telegram']['admin_id'], f"""Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id={user_id}">id{user_id}</a>""",
+                             parse_mode = 'HTML')
 
 
 @admin
@@ -532,7 +530,7 @@ if __name__ == "__main__":
                                            },
                                            fallbacks=[CommandHandler('cancel', cancel)]
                                            )
-    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_buttons)],
+    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(pay_buttons)],
                                               states={
                                                   ANSWER_RESPONSE: [MessageHandler(Filters.text, answer_response)],
                                               },
@@ -542,6 +540,7 @@ if __name__ == "__main__":
     dp.add_handler(pay_conversation)
     dp.add_handler(ask_conversation)
     dp.add_handler(answer_conversation)
+
     # admin commands
 
     dp.add_handler(CommandHandler("admin_help", admin_help))
