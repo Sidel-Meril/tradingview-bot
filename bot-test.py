@@ -211,7 +211,7 @@ def pay_response(update, context):
         admin_ids = [row[0] for row in db.get_admins()]
         db.close()
         for admin_id in admin_ids:
-            updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
+            updater.bot.send_photo(admin_id, photo=update.message.photo[-1].file_id,
                                caption="""Скриншот оплаты от пользователя <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id), parse_mode='HTML', reply_markup=reply_markup)
         updater.bot.send_message(user_id, "Скриншот отправлен на рассмотрение оператору. Ожидайте ответа.")
     except Exception as e:
@@ -245,7 +245,7 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
 def answer_response(update, context, admin_id):
     global user_id_to_response
     answer = update.message.text
-    updater.bot.send_message(chat_id=admin_id, text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
+    updater.bot.send_message(chat_id=user_id_to_response, text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
                              parse_mode='HTML')
     updater.bot.send_message(chat_id=admin_id, text=f"""Вы ответили пользователю <a href="tg://user?id={user_id_to_response}">id{user_id_to_response}</a>""",
                              parse_mode='HTML')
