@@ -53,8 +53,8 @@ def common_user(func):
             print('User recognized, plan: %s' %(user_plans[users.index(user_id)]) )
         db.close()
 
-        func(update, contex, *args, **kwargs)
-
+        result = func(update, contex, *args, **kwargs)
+        return result
     return check_user
 
 def paid_plane_user(func):
@@ -82,7 +82,8 @@ def paid_plane_user(func):
 
                     return False
         db.close()
-        func(update, contex, *args, **kwargs)
+        result = func(update, contex, *args, **kwargs)
+        return result
 
     return check_user
 
@@ -142,12 +143,11 @@ def get_screenshot(update, context):
 
 
 
+@common_user
 def ask_request(update, context):
-    @common_user
-    def _ask_request(update, context):
-        user_id = update.message.chat.id
-        updater.bot.send_message(chat_id=user_id, text="""Введите ваше сообщение для администрации.""",
-                                 parse_mode='HTML')
+    user_id = update.message.chat.id
+    updater.bot.send_message(chat_id=user_id, text="""Введите ваше сообщение для администрации.""",
+                             parse_mode='HTML')
     return ASK_RESPONSE
 
 
@@ -167,6 +167,31 @@ def ask_response(update, message):
 
 
 
+@common_user
+def pay_request(update, context):
+    user_id = update.message.chat.id
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    data = db.get_users()
+    users = [user[0] for user in data]
+    user_plans = [user[1] for user in data]
+    _, price, duration, payment_data = db.get_settings()[0]
+    db.close()
+    if user_plans[users.index(user_id)] == 'paid':
+        message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
+        """
+        updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
+        return ConversationHandler.END
+
+    message=f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
+    
+Реквизиты:
+<pre>{payment_data}</pre>
+
+Пришлите скриншот оплаты (квитанцию) боту в чат, и он активирует Вам доступ.
+    """
+    updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
+    return PAY_RESPONSE
+
 def pay_response(update, context):
     user_id = update.message.chat.id
     keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id} {os.environ["ADMIN_ID"]}'),
@@ -180,32 +205,6 @@ def pay_response(update, context):
         print(e)
         updater.bot.send_message(user_id, "Что-то пошло не так :( Попробуйте еще раз отправить скриншот.")
     return ConversationHandler.END
-
-def pay_request(update, context):
-    @common_user
-    def _pay_request(update,context):
-        user_id = update.message.chat.id
-        db = sqlcon.Database(database_url=variables['database']['link'])
-        data = db.get_users()
-        users = [user[0] for user in data]
-        user_plans = [user[1] for user in data]
-        _, price, duration, payment_data = db.get_settings()[0]
-        db.close()
-        if user_plans[users.index(user_id)] == 'paid':
-            message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
-            """
-            updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-            return ConversationHandler.END
-
-        message=f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
-        
-Реквизиты:
-<pre>{payment_data}</pre>
-
-Пришлите скриншот оплаты (квитанцию) боту в чат, и он активирует Вам доступ.
-        """
-        updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-    return PAY_RESPONSE
 
 def cancel(update, context):
     user_id = update.message.chat.id
@@ -232,6 +231,7 @@ def answer_buttons(update: Update, context: CallbackContext) -> None:
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""", parse_mode='HTML')
         return ANSWER_RESPONSE
 
+@admin
 def answer_response(update, context):
     global user_id_to_response
     answer = update.message.text
@@ -505,7 +505,7 @@ if __name__=="__main__":
                                            )
     answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_buttons)],
                                            states={
-                                               ANSWER_RESPONSE:[MessageHandler(Filters.chat((os.environ['ADMIN_ID'])) & Filters.text, answer_response)],
+                                               ANSWER_RESPONSE:[MessageHandler(Filters.text, answer_response)],
                                            },
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )

@@ -52,7 +52,8 @@ def common_user(func):
             print('User recognized, plan: %s' % (user_plans[users.index(user_id)]))
         db.close()
 
-        func(update, contex, *args, **kwargs)
+        result = func(update, contex, *args, **kwargs)
+        return result
 
     return check_user
 
@@ -172,25 +173,22 @@ def ask_response(update, message):
     updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение администратору. Ожидайте ответа.")
     return ConversationHandler.END
 
-
-
+@common_user
 def pay_request(update, context):
-    @common_user
-    def _pay_request(update, context):
-        user_id = update.message.chat.id
-        db = sqlcon.Database(database_url=variables['database']['link'])
-        data = db.get_users()
-        users = [user[0] for user in data]
-        user_plans = [user[1] for user in data]
-        _, price, duration, payment_data = db.get_settings()[0]
-        db.close()
-        if user_plans[users.index(user_id)] == 'paid':
-            message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
-            """
-            updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-            return ConversationHandler.END
+    user_id = update.message.chat.id
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    data = db.get_users()
+    users = [user[0] for user in data]
+    user_plans = [user[1] for user in data]
+    _, price, duration, payment_data = db.get_settings()[0]
+    db.close()
+    if user_plans[users.index(user_id)] == 'paid':
+        message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
+        """
+        updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
+        return ConversationHandler.END
 
-        message = f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
+    message = f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
 
 Реквизиты:
 <pre>{payment_data}</pre>
