@@ -487,9 +487,7 @@ if __name__=="__main__":
     """
     dp.add_handler(CommandHandler("help", user_help))
     dp.add_handler(CommandHandler("listpairs", listpairs))
-    dp.add_handler(CommandHandler("pay", pay))
     dp.add_handler(CommandHandler("request", req))
-    dp.add_handler(CommandHandler("ask", ask))
 
     pay_conversation = ConversationHandler(entry_points=[CommandHandler("pay", pay_request)],
                                            states={
@@ -503,7 +501,7 @@ if __name__=="__main__":
                                            },
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )
-    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_button)],
+    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_buttons)],
                                            states={
                                                ANSWER_RESPONSE:[MessageHandler(Filters.text, answer_response)],
                                            },
@@ -521,7 +519,6 @@ if __name__=="__main__":
     dp.add_handler(CommandHandler("chngpayment", chngpayment))
     dp.add_handler(CommandHandler("adddays", adddays))
     dp.add_handler(CommandHandler("whois", whois))
-    dp.add_handler(CommandHandler("test", test))
 
     """
     /paid - список оплативших - показывает когда и кто оплачивал и (в скобках желательно писать сколько кому осталось)
