@@ -111,7 +111,7 @@ def start(update, context):
     else:
         user_help(update, context)
 
-@admin
+@common_user
 def listpairs(update, context, admin_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     data = db.get_pairs()
