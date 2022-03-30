@@ -107,9 +107,9 @@ class ChromeDriver:
         while self._check_exists(By.XPATH, "////*[contains(text(), 'This website uses cookies')]"):
             sleep(0.1)
         "accept cookies"
+        sleep(0.1)
         try:
-            # accept_window = self.driver.find_element(by=By.XPATH, value='//div[@class="main-content-2gM8G-uJ"]')
-            accept_window = self.driver.find_element(by=By.XPATH, value="////*[contains(text(), 'This website uses cookies')]")
+            accept_window = self.driver.find_element(by=By.XPATH, value='//div[@class="main-content-2gM8G-uJ"]')
             accept_line = accept_window.find_element(by=By.XPATH, value='//div[@class="actions-2gM8G-uJ"]')
             print('accept for cookies found')
             accept = accept_line.find_elements(by=By.XPATH, value="//button")
