@@ -31,12 +31,12 @@ class Database:
         # self.cur.execute(query)
 
         # self.cur.execute(query)
-        query = """INSERT INTO admins(admin_id) VALUES ('%i')
-        """ % (admin)
+        # query = """INSERT INTO admins(admin_id) VALUES ('%i')
+        # """ % (admin)
 
 
 
-        self.cur.execute(query)
+        # self.cur.execute(query)
         #
         # # # Create user table
         # query="""CREATE TABLE users(

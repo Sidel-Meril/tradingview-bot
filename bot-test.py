@@ -91,7 +91,7 @@ def admin(func):
     def check_user(update, context, *args, **kwargs):
         user_id = update.message.chat.id
         db = sqlcon.Database(database_url=variables['database']['link'])
-        admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+        admin_ids = [row[0] for row in db.get_admins()]
         db.close()
         if user_id not in admin_ids:
             return None
@@ -104,7 +104,7 @@ def admin(func):
 def start(update, context):
     user_id = update.message.chat.id
     db = sqlcon.Database(database_url=variables['database']['link'])
-    admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+    admin_ids = [row[0] for row in db.get_admins()]
     db.close()
     if user_id in admin_ids:
         admin_help(update, context)
@@ -162,7 +162,7 @@ def ask_response(update, message):
     keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} 0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     db = sqlcon.Database(database_url=variables['database']['link'])
-    admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+    admin_ids = [row[0] for row in db.get_admins()]
     db.close()
     for admin_id in admin_ids:
         updater.bot.send_message(admin_id, text="""<b>Сообщение от пользователя</b>
@@ -208,7 +208,7 @@ def pay_response(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     try:
         db = sqlcon.Database(database_url=variables['database']['link'])
-        admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+        admin_ids = [row[0] for row in db.get_admins()]
         db.close()
         for admin_id in admin_ids:
             updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
@@ -256,7 +256,7 @@ def accept(user_id):
     price, duration, payment_data = db.get_setting('price'), db.get_setting('term'), db.get_setting('payment')
     _duration = duration*86280
     db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp())+_duration)
-    admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+    admin_ids = [row[0] for row in db.get_admins()]
     db.close()
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята")
     for admin_id in admin_ids:
@@ -266,7 +266,7 @@ def accept(user_id):
 def decline(user_id):
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
     db = sqlcon.Database(database_url=variables['database']['link'])
-    admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+    admin_ids = [row[0] for row in db.get_admins()]
     db.close()
     for admin_id in admin_ids:
         updater.bot.send_message(admin_id, f"""Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id={user_id}">id{user_id}</a>""",
