@@ -29,9 +29,7 @@ updater = Updater(variables['telegram']['token'], workers=10, use_context=True)
 PORT = int(os.environ.get('PORT', '8443'))
 
 #Conversations
-PAY_RESPONSE = range(1)
-ASK_RESPONSE = range(1)
-ANSWER_RESPONSE  = range(1)
+PAY_RESPONSE,ASK_RESPONSE,ANSWER_RESPONSE  = range(3)
 
 #Globals
 user_id_to_response = None
