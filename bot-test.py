@@ -90,24 +90,29 @@ def paid_plane_user(func):
 def admin(func):
     def check_user(update, context, *args, **kwargs):
         user_id = update.message.chat.id
-        print(user_id, variables['telegram']['admin_id'], user_id == variables['telegram']['admin_id'])
-        if user_id != variables['telegram']['admin_id']:
+        db = sqlcon.Database(database_url=variables['database']['link'])
+        admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+        db.close()
+        if user_id not in admin_ids:
             return None
         print('Hi, Admin')
-        res = func(update, context, *args, **kwargs)
+        res = func(update, context, admin_id = user_id, *args, **kwargs)
         return res
     return check_user
 
 @common_user
 def start(update, context):
     user_id = update.message.chat.id
-    if user_id == variables['telegram']['admin_id']:
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+    db.close()
+    if user_id in admin_ids:
         admin_help(update, context)
     else:
         user_help(update, context)
 
 @admin
-def listpairs():
+def listpairs(update, context, admin_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     data = db.get_pairs()
     db.close()
@@ -119,7 +124,7 @@ def listpairs():
 
     """ + ('\n').join(message_rows)
 
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+    updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
 def req(update, context):
     user_id = update.message.chat.id
@@ -154,9 +159,13 @@ def ask_request(update, context):
 def ask_response(update, message):
     user_id = update.message.chat.id
     user_message = update.message.text
-    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} {os.environ["ADMIN_ID"]}')]]
+    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} 0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    updater.bot.send_message(variables['telegram']['admin_id'], text="""<b>Сообщение от пользователя</b>
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+    db.close()
+    for admin_id in admin_ids:
+        updater.bot.send_message(admin_id, text="""<b>Сообщение от пользователя</b>
     %s
 
     <i>%s</i>    
@@ -194,11 +203,15 @@ def pay_request(update, context):
 
 def pay_response(update, context):
     user_id = update.message.chat.id
-    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id} {os.environ["ADMIN_ID"]}'),
-                 InlineKeyboardButton('Отклонить',callback_data=f'decline {user_id} {os.environ["ADMIN_ID"]}')]]
+    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id} 0'),
+                 InlineKeyboardButton('Отклонить',callback_data=f'decline {user_id} 0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     try:
-        updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
+        db = sqlcon.Database(database_url=variables['database']['link'])
+        admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+        db.close()
+        for admin_id in admin_ids:
+            updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
                                caption="""Скриншот оплаты от пользователя <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id), parse_mode='HTML', reply_markup=reply_markup)
         updater.bot.send_message(user_id, "Скриншот отправлен на рассмотрение оператору. Ожидайте ответа.")
     except Exception as e:
@@ -213,6 +226,7 @@ def cancel(update, context):
 
 def pay_buttons(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
+    admin_id = update.callback_query.from_user
     query.answer()
     if 'accept' in query.data:
         _, user_id, __ = query.data.split(' ')
@@ -223,36 +237,43 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
     elif 'reply_to' in query.data:
         global user_id_to_response
         _, user_id_to_response, __ = query.data.split(' ')
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""", parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text="""Введите ответ пользователю.""", parse_mode='HTML')
         return ANSWER_RESPONSE
 
 @admin
-def answer_response(update, context):
+def answer_response(update, context, admin_id):
     global user_id_to_response
     answer = update.message.text
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
+    updater.bot.send_message(chat_id=admin_id, text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
                              parse_mode='HTML')
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=f"""Вы ответили пользователю <a href="tg://user?id={user_id_to_response}">id{user_id_to_response}</a>""",
+    updater.bot.send_message(chat_id=admin_id, text=f"""Вы ответили пользователю <a href="tg://user?id={user_id_to_response}">id{user_id_to_response}</a>""",
                              parse_mode='HTML')
     user_id_to_response = None
     return ConversationHandler.END
 
 def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
-    _, price, duration, payment_data = db.get_settings()[0]
+    price, duration, payment_data = db.get_setting('price'), db.get_setting('term'), db.get_setting('payment')
     _duration = duration*86280
     db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp())+_duration)
+    admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+    db.close()
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята")
-    updater.bot.send_message(variables['telegram']['admin_id'],
+    for admin_id in admin_ids:
+        updater.bot.send_message(admin_id,
                              f"""Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id={user_id}">id{user_id}</a>""", parse_mode='HTML')
 
 def decline(user_id):
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
-    updater.bot.send_message(variables['telegram']['admin_id'], f"""Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id={user_id}">id{user_id}</a>""",
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    admin_ids = [row[0] for row in sqlcon.Database.get_admins()]
+    db.close()
+    for admin_id in admin_ids:
+        updater.bot.send_message(admin_id, f"""Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id={user_id}">id{user_id}</a>""",
                              parse_mode = 'HTML')
 
 @admin
-def admin_help(update, context):
+def admin_help(update, context, admin_id):
     user_id = update.message.chat.id
     help_message = """
 /paid - список оплативших - показывает когда и кто оплачивал и (в скобках желательно писать сколько кому осталось)
@@ -265,7 +286,7 @@ def admin_help(update, context):
 /whois - узнать id_пользователя
     """
 
-    updater.bot.send_message(chat_id=user_id, text=help_message)
+    updater.bot.send_message(chat_id=admin_id, text=help_message)
 
 @common_user
 def user_help(update, context):
@@ -281,7 +302,7 @@ def user_help(update, context):
     updater.bot.send_message(chat_id=user_id, text=help_message)
 
 @admin
-def paid(update, context):
+def paid(update, context, admin_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     data = db.get_users()
     db.close()
@@ -306,11 +327,11 @@ def paid(update, context):
 
 """+('\n').join(message_rows)
 
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode = 'HTML')
+    updater.bot.send_message(chat_id=admin_id, text=message, parse_mode = 'HTML')
 
 
 @admin
-def writeall(update, context):
+def writeall(update, context, admin_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     users = db.get_users()
     users = [user[0] for user in users]
@@ -319,17 +340,17 @@ def writeall(update, context):
     for user_id in users:
         try:
             updater.bot.send_message(chat_id=user_id, text=res_text, parse_mode='HTML')
-            updater.bot.send_message(chat_id=variables['telegram']['admin_id'],
+            updater.bot.send_message(chat_id=admin_id,
                                      text="""Сообщение пользователю <a href="tg://user?id=%i">id%i</a> досталено.""" % user_id,
                                      parse_mode='HTML')
         except:
-            updater.bot.send_message(chat_id=variables['telegram']['admin_id'],
+            updater.bot.send_message(chat_id=admin_id,
                                      text="""Пользователь <a href="tg://user?id=%i">id%i</a> удалил бота, но останется в базе для статистики.""" % user_id,
                                      parse_mode='HTML')
 
 
 @admin
-def addpair(update, context):
+def addpair(update, context, admin_id):
     try:
         _, exchange, symbol = update.message.text.split(' ')
         db = sqlcon.Database(database_url=variables['database']['link'])
@@ -338,13 +359,13 @@ def addpair(update, context):
         message = """
 Пара <b>%s:%s</b> добавлена.
                 """ % (exchange,symbol)
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
 Введите запрос в формате:
 <pre>/addpair exchange symbol</pre>
                 """
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
 
 def get_info(user_id):
@@ -377,18 +398,18 @@ def get_info(user_id):
     return info
 
 @admin
-def whois(update, context):
+def whois(update, context, admin_id):
     try:
         user_id = update.message.reply_to_message.forward_from.id
         info = get_info(user_id)
-        updater.bot.send_message(variables['telegram']['admin_id'], info, parse_mode='HTML')
+        updater.bot.send_message(admin_id, info, parse_mode='HTML')
     except:
-        updater.bot.send_message(variables['telegram']['admin_id'],
+        updater.bot.send_message(admin_id,
                                  """Данную команду нужно использовать как ответ на сообщение интересующего вас пользователя."""
                                  , parse_mode='HTML')
 
 @admin
-def deletepair(update, context):
+def deletepair(update, context, admin_id):
     try:
         _, exchange, symbol = update.message.text.split(' ')
         db = sqlcon.Database(database_url=variables['database']['link'])
@@ -397,55 +418,55 @@ def deletepair(update, context):
         message = """
 Пара <b>%s:%s</b> удалена.
                 """ % (exchange,symbol)
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
 Введите запрос в формате:
 <pre>/deletepair exchange symbol</pre>
                 """
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
 @admin
-def chngprice(update, context):
+def chngprice(update, context, admin_id):
     try:
         _, price = update.message.text.split(' ')
         price = int(price)
         db = sqlcon.Database(database_url=variables['database']['link'])
-        db.change_settings_price(price)
+        db.change_settings('price',str(price))
         db.close()
         message = """
 Цена подписки теперь <b>%i долларов</b>.
                 """ % (price)
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
 Введите запрос в формате:
 <pre>/chngprice цена(только число)</pre>
                 """
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
 @admin
-def chngpayment(update, context):
+def chngpayment(update, context, admin_id):
     try:
         _, payment = update.message.text.repalce('/chngpayment','')
         db = sqlcon.Database(database_url=variables['database']['link'])
-        db.change_settings_payment(payment)
+        db.change_settings('payment')
         db.close()
         message = """
     Реквизиты для оплаты обновлены:
      <pre>%s/pre>.
                 """ % (payment)
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
             Введите запрос в формате:
             <pre>/chngpayment реквизиты</pre>
                 """
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
 
 @admin
-def adddays(update, context):
+def adddays(update, context, admin_id):
     try:
         _, user_id, days = update.message.text.split(' ')
         user_id, days = int(user_id), int(days)
@@ -458,13 +479,13 @@ def adddays(update, context):
         message = """
     Подписка пользователя <a href="tg://user?id=%i">id%i</a> изменена на %i дней
                 """ % (user_id, user_id, days)
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
             Введите запрос в формате:
             <pre>/adddays id_пользователя(только число) количество_дней</pre>
                 """
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
 
 

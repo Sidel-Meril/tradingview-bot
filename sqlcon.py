@@ -18,62 +18,69 @@ class Database:
     @_conn
     def create_tables(self):
         # Create user table
-        query="""CREATE TABLE botsettings(
-        main_id int NOT NULL PRIMARY KEY,
-        price int NOT NULL,
-        durability_in_days int NOT NULL,
-        payment varchar(255) NOT NULL
-        )"""
+        # query="""CREATE TABLE bot_settings(
+        # setting_name varchar(255) NOT NULL PRIMARY KEY,
+        # value varchar(1000) NOT NULL
+        # )"""
+        #
+        # self.cur.execute(query)
+        # query="""CREATE TABLE admins(
+        # admin_id bigint NOT NULL PRIMARY KEY
+        # )"""
+        #
+        # self.cur.execute(query)
+
+        # self.cur.execute(query)
+        query = """INSERT INTO admins(admin_id) VALUES ('%i')
+        """ % (admin)
+
+
 
         self.cur.execute(query)
-        query = """INSERT INTO botsettings(main_id, price, durability_in_days, payment) VALUES (%i, %i, %i, '%s')
-        """ % (1, 0, 0, 'test')
+        #
+        # # # Create user table
+        # query="""CREATE TABLE users(
+        # user_id bigint PRIMARY KEY NOT NULL,
+        # plan varchar(10) NOT NULL,
+        # start bigint,
+        # expired bigint
+        # )"""
+        #
+        # self.cur.execute(query)
+        #
+        # # Create pics table
+        # query = """CREATE TABLE sources(
+        # SYMBOL varchar(255) PRIMARY KEY,
+        # EXCHANGE varchar(255) NOT NULL
+        # )
+        # """
+        #
+        # self.cur.execute(query)
+        self.conn.commit()
 
-        self.cur.execute(query)
 
-        # # Create user table
-        query="""CREATE TABLE users(
-        user_id bigint PRIMARY KEY NOT NULL,
-        plan varchar(10) NOT NULL,
-        start bigint,
-        expired bigint
-        )"""
-
-        self.cur.execute(query)
-
-        # Create pics table
-        query = """CREATE TABLE sources(
-        SYMBOL varchar(255) PRIMARY KEY,
-        EXCHANGE varchar(255) NOT NULL
-        )
-        """
-
+    @_conn
+    def add_settings(self, setting_name, value):
+        query = """INSERT INTO bot_settings(setting_name, value) VALUES ('%s', '%s')
+        """ % (setting_name, value)
         self.cur.execute(query)
         self.conn.commit()
 
     @_conn
-    def change_settings_price(self, price):
+    def change_settings(self, setting_name, value):
         query = """UPDATE botsettings
-        SET price = %i WHERE main_id = '1';
-        """ % (price)
+        SET value = '%s' WHERE setting_name = '%s';
+        """ % (value, setting_name)
         self.cur.execute(query)
         self.conn.commit()
 
     @_conn
-    def change_settings_dur(self, durability):
-        query = """UPDATE botsettings
-        SET durability_in_days = %i WHERE main_id = '1';
-        """ % (durability)
+    def get_setting(self, setting_name):
+        query = """SELECT * FROM bot_settings WHERE setting_name = '%s'
+        """ % (setting_name)
         self.cur.execute(query)
-        self.conn.commit()
-
-    @_conn
-    def change_settings_payment(self, payment_method):
-        query = """UPDATE botsettings
-        SET payment = '%s' WHERE main_id = '1';
-        """ % (payment_method)
-        self.cur.execute(query)
-        self.conn.commit()
+        value = self.cur.fetchall()
+        return value[0][1]
 
     @_conn
     def another_query(self):
@@ -170,7 +177,18 @@ class Database:
     @_conn
     def get_settings(self):
 
-        query = """SELECT * FROM botsettings WHERE main_id='1'
+        query = """SELECT * FROM bot_settings
+        """
+
+        self.cur.execute(query)
+        result = self.cur.fetchall()
+
+        return result
+
+    @_conn
+    def get_admins(self):
+
+        query = """SELECT * FROM admins
         """
 
         self.cur.execute(query)
@@ -182,4 +200,8 @@ class Database:
             self.conn.close()
 
 if __name__ == "__main__":
-    pass
+    db = Database('postgres://phsiksrqngenoy:f7c9ca60d11cdd47b6c76bd479706be8183f57a08f0b552b210550d10b4e1596@ec2-18-214-134-226.compute-1.amazonaws.com:5432/d46les6a5j0asm')
+    db.create_tables()
+    res= db.get_admins()
+    print( res)
+    db.close()
