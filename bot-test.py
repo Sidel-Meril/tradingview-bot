@@ -452,7 +452,7 @@ def chngpayment(update, context, admin_id):
     try:
         payment = update.message.text.replace('/chngpayment','')
         db = sqlcon.Database(database_url=variables['database']['link'])
-        db.change_settings('payment')
+        db.change_settings('payment', payment)
         db.close()
         message = """
     Реквизиты для оплаты обновлены:
