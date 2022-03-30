@@ -29,7 +29,7 @@ updater = Updater(variables['telegram']['token'], workers=10, use_context=True)
 PORT = int(os.environ.get('PORT', '8443'))
 
 #Conversations
-PAY_RESPONSE,ASK_RESPONSE,ANSWER_RESPONSE  = range(3)
+PAY_RESPONSE,ASK_RESPONSE,ANSWER_RESPONSE  = 111, 222, 333
 
 #Globals
 user_id_to_response = None
@@ -189,6 +189,7 @@ def pay_request(update, context):
 Пришлите скриншот оплаты (квитанцию) боту в чат, и он активирует Вам доступ.
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
+    return PAY_RESPONSE
 
 @common_user
 def pay_response(update, context):
