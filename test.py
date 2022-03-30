@@ -4,35 +4,34 @@
 import os
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Updater, MessageHandler, ConversationHandler, CommandHandler, CallbackQueryHandler, \
-    CallbackContext
+    CallbackContext, Filters
 from telegram.ext.dispatcher import run_async
-from telegram.ext.filters import Filters
-import json
-import random
 from datetime import datetime, date
 import sqlcon
 import os
 import selenium_get_screen
 
+
 variables = {
-  "telegram": {
-    "token": os.environ['TELEGRAM_TOKEN'],
-    "admin_id": int(os.environ['ADMIN_ID'])
-  },
-  "database": {
-    "link": os.environ['DATABASE_URL'],
-  }
+    "telegram": {
+        "token": '1656495961:AAHx9lSX0DbqUoc2aPHyHLnlSKvi1kLo8ss',
+        "admin_id": 273168225
+    },
+    "database": {
+        "link": 'postgres://phsiksrqngenoy:f7c9ca60d11cdd47b6c76bd479706be8183f57a08f0b552b210550d10b4e1596@ec2-18-214-134-226.compute-1.amazonaws.com:5432/d46les6a5j0asm',
+    }
 }
 
-#Init bot
+# Init bot
 updater = Updater(variables['telegram']['token'], workers=10, use_context=True)
 PORT = int(os.environ.get('PORT', '8443'))
 
-#Conversations
-PAY_RESPONSE,ASK_RESPONSE,ANSWER_RESPONSE  = 111, 222, 333
+# Conversations
+PAY_RESPONSE, ASK_RESPONSE, ANSWER_RESPONSE = 111, 222, 333
 
-#Globals
+# Globals
 user_id_to_response = None
+
 
 def common_user(func):
     def check_user(update, contex, *args, **kwargs):
@@ -50,12 +49,13 @@ def common_user(func):
                 print(e)
                 pass
         else:
-            print('User recognized, plan: %s' %(user_plans[users.index(user_id)]) )
+            print('User recognized, plan: %s' % (user_plans[users.index(user_id)]))
         db.close()
 
         func(update, contex, *args, **kwargs)
 
     return check_user
+
 
 def paid_plane_user(func):
     def check_user(update, contex, *args, **kwargs):
@@ -72,11 +72,12 @@ def paid_plane_user(func):
                 pass
         else:
             if user_plans[users.index(user_id)] != 'paid':
-                updater.bot.send_message(user_id,'Эта функция доступна только пользователям с платной подпиской. Нажмите /pay, чтобы оплатить.')
+                updater.bot.send_message(user_id,
+                                         'Эта функция доступна только пользователям с платной подпиской. Нажмите /pay, чтобы оплатить.')
                 return False
             else:
-                if datetime.now().timestamp()>data[users.index(user_id)][3]:
-                    db.edit_user_by_id(user_id,'free',0,0)
+                if datetime.now().timestamp() > data[users.index(user_id)][3]:
+                    db.edit_user_by_id(user_id, 'free', 0, 0)
                     updater.bot.send_message(user_id,
                                              'Ваша подписка истекла. Нажмите /pay, чтобы оплатить.')
 
@@ -85,6 +86,7 @@ def paid_plane_user(func):
         func(update, contex, *args, **kwargs)
 
     return check_user
+
 
 def admin(func):
     def check_user(update, context, *args, **kwargs):
@@ -95,7 +97,9 @@ def admin(func):
         print('Hi, Admin')
         res = func(update, context, *args, **kwargs)
         return res
+
     return check_user
+
 
 @common_user
 def start(update, context):
@@ -104,6 +108,7 @@ def start(update, context):
         admin_help(update, context)
     else:
         user_help(update, context)
+
 
 @admin
 def listpairs():
@@ -120,12 +125,14 @@ def listpairs():
 
     updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
+
 def req(update, context):
     user_id = update.message.chat.id
     message = """Введите правильно название пары и таймфрейм.
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
     dp.add_handler(MessageHandler(Filters.chat((user_id)) & Filters.text, get_screenshot))
+
 
 @paid_plane_user
 def get_screenshot(update, context):
@@ -134,20 +141,20 @@ def get_screenshot(update, context):
     try:
         pair, timeframe = update.message.text.split(' ')
         updater.bot.send_message(chat_id=user_id, text=f"Ищу <i>{pair}</i> <b>{timeframe}</b>", parse_mode='HTML')
-        screenshot = selenium_get_screen.get_screenshot(pair,timeframe)
+        screenshot = selenium_get_screen.get_screenshot(pair, timeframe)
         updater.dispatcher.bot.send_photo(chat_id=user_id, photo=screenshot)
     except Exception as e:
         print(e)
-        updater.bot.send_message(chat_id=user_id, text="Ничего не найдено :( Введите название пары/таймфрейма правильно", parse_mode='HTML')
-
-
-
-def ask_request(update, context):
-    @common_user
-    def _ask_request(update, context):
-        user_id = update.message.chat.id
-        updater.bot.send_message(chat_id=user_id, text="""Введите ваше сообщение для администрации.""",
+        updater.bot.send_message(chat_id=user_id,
+                                 text="Ничего не найдено :( Введите название пары/таймфрейма правильно",
                                  parse_mode='HTML')
+
+
+@common_user
+def ask_request(update, context):
+    user_id = update.message.chat.id
+    updater.bot.send_message(chat_id=user_id, text="""Введите ваше сообщение для администрации.""",
+                             parse_mode='HTML')
     return ASK_RESPONSE
 
 
@@ -167,23 +174,9 @@ def ask_response(update, message):
 
 
 
-def pay_response(update, context):
-    user_id = update.message.chat.id
-    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id} {os.environ["ADMIN_ID"]}'),
-                 InlineKeyboardButton('Отклонить',callback_data=f'decline {user_id} {os.environ["ADMIN_ID"]}')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    try:
-        updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
-                               caption="""Скриншот оплаты от пользователя <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id), parse_mode='HTML', reply_markup=reply_markup)
-        updater.bot.send_message(user_id, "Скриншот отправлен на рассмотрение оператору. Ожидайте ответа.")
-    except Exception as e:
-        print(e)
-        updater.bot.send_message(user_id, "Что-то пошло не так :( Попробуйте еще раз отправить скриншот.")
-    return ConversationHandler.END
-
 def pay_request(update, context):
     @common_user
-    def _pay_request(update,context):
+    def _pay_request(update, context):
         user_id = update.message.chat.id
         db = sqlcon.Database(database_url=variables['database']['link'])
         data = db.get_users()
@@ -197,20 +190,38 @@ def pay_request(update, context):
             updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
             return ConversationHandler.END
 
-        message=f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
-        
+        message = f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
+
 Реквизиты:
 <pre>{payment_data}</pre>
 
 Пришлите скриншот оплаты (квитанцию) боту в чат, и он активирует Вам доступ.
-        """
-        updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
+    """
+    updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
     return PAY_RESPONSE
+
+
+def pay_response(update, context):
+    user_id = update.message.chat.id
+    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id}'),
+                 InlineKeyboardButton('Отклонить', callback_data=f'decline {user_id}')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    try:
+        updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
+                               caption="""Скриншот оплаты от пользователя <a href="tg://user?id=%i">id%i</a>""" % (
+                               user_id, user_id), parse_mode='HTML', reply_markup=reply_markup)
+        updater.bot.send_message(user_id, "Скриншот отправлен на рассмотрение оператору. Ожидайте ответа.")
+    except Exception as e:
+        print(e)
+        updater.bot.send_message(user_id, "Что-то пошло не так :( Попробуйте еще раз отправить скриншот.")
+    return ConversationHandler.END
+
 
 def cancel(update, context):
     user_id = update.message.chat.id
     updater.bot.send_message(user_id, "Текущая операция отменена.")
     return ConversationHandler.END
+
 
 def pay_buttons(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
@@ -222,40 +233,55 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
         _, user_id, __ = query.data.split(' ')
         decline(int(user_id))
 
-def answer_buttons(update: Update, context: CallbackContext) -> None:
+
+def answer_buttons(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
     if 'reply_to' in query.data:
         global user_id_to_response
         _, user_id_to_response, __ = query.data.split(' ')
-        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""", parse_mode='HTML')
+        updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""",
+                                 parse_mode='HTML')
+
         return ANSWER_RESPONSE
 
+
+@admin
 def answer_response(update, context):
     global user_id_to_response
     answer = update.message.text
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'],
+                             text="<b>Ответ администратора на Ваше сообщение</b>\n" + answer,
                              parse_mode='HTML')
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id_to_response,
-                                                                                                                                                 user_id_to_response),
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'],
+                             text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" % (
+                             user_id_to_response,
+                             user_id_to_response),
                              parse_mode='HTML')
     user_id_to_response = None
     return ConversationHandler.END
 
+
 def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     _, price, duration, payment_data = db.get_settings()[0]
-    _duration = duration*86280
-    db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp())+_duration)
+    _duration = duration * 86280
+    db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp()) + _duration)
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята")
     updater.bot.send_message(variables['telegram']['admin_id'],
-                             """Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (user_id), parse_mode='HTML')
+                             """Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (
+                                 user_id), parse_mode='HTML')
+
 
 def decline(user_id):
-    updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
-    updater.bot.send_message(variables['telegram']['admin_id'], """Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id),
-                             parse_mode = 'HTML')
+    updater.bot.send_message(user_id,
+                             "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
+    updater.bot.send_message(variables['telegram']['admin_id'],
+                             """Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (
+                                 user_id),
+                             parse_mode='HTML')
+
 
 @admin
 def admin_help(update, context):
@@ -273,6 +299,7 @@ def admin_help(update, context):
 
     updater.bot.send_message(chat_id=user_id, text=help_message)
 
+
 @common_user
 def user_help(update, context):
     user_id = update.message.chat.id
@@ -286,33 +313,34 @@ def user_help(update, context):
 
     updater.bot.send_message(chat_id=user_id, text=help_message)
 
+
 @admin
 def paid(update, context):
     db = sqlcon.Database(database_url=variables['database']['link'])
     data = db.get_users()
     db.close()
     paid_users = list(filter(lambda x: x != None, [row if row[1] == 'paid' else None for row in data]))
-    message_rows = [ """<a href="tg://user?id=%i">id%i</a>:
+    message_rows = ["""<a href="tg://user?id=%i">id%i</a>:
 <b>%s / %s</b>
 <b>Oсталось</b>: %i %s
-    
+
     """
-                     %(user, user, date.fromtimestamp(start).isoformat(),date.fromtimestamp(end).isoformat(),
-                       int((end-datetime.now().timestamp())/86280),
-                       'дня' if str(int((end - datetime.now().timestamp())/86280))[-1] == '2' or
-                                str(int((end - datetime.now().timestamp())/86280))[-1] == '3' or
-                                str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4'else 'дней')
-    for user, _, start, end in paid_users]
-    message=f"""
+                    % (user, user, date.fromtimestamp(start).isoformat(), date.fromtimestamp(end).isoformat(),
+                       int((end - datetime.now().timestamp()) / 86280),
+                       'дня' if str(int((end - datetime.now().timestamp()) / 86280))[-1] == '2' or
+                                str(int((end - datetime.now().timestamp()) / 86280))[-1] == '3' or
+                                str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4' else 'дней')
+                    for user, _, start, end in paid_users]
+    message = f"""
 <b>Статистика использования бота</b>
 <pre>Всего пользователей: {len(data)}</pre>
 <pre>Платных подписок: {len(paid_users)}</pre>
 
 Пользователи, у которых оформлена подписка:
 
-"""+('\n').join(message_rows)
+""" + ('\n').join(message_rows)
 
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode = 'HTML')
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
 
 @admin
@@ -343,7 +371,7 @@ def addpair(update, context):
         db.close()
         message = """
 Пара <b>%s:%s</b> добавлена.
-                """ % (exchange,symbol)
+                """ % (exchange, symbol)
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
     except:
         message = """
@@ -368,11 +396,11 @@ def get_info(user_id):
 <pre>Подписка оформлена</pre>
 <pre>%s / %s</pre>
 <pre>Oсталось: %i %s</pre>""" % (
-            user, user, date.fromtimestamp(start).isoformat(), date.fromtimestamp(end).isoformat(),
-            int((end - datetime.now().timestamp()) / 86280),
-            'дня' if str(int((end - datetime.now().timestamp()) / 86280))[-1] == '2' or
-                     str(int((end - datetime.now().timestamp()) / 86280))[-1] == '3' or
-                     str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4' else 'дней')
+                user, user, date.fromtimestamp(start).isoformat(), date.fromtimestamp(end).isoformat(),
+                int((end - datetime.now().timestamp()) / 86280),
+                'дня' if str(int((end - datetime.now().timestamp()) / 86280))[-1] == '2' or
+                         str(int((end - datetime.now().timestamp()) / 86280))[-1] == '3' or
+                         str(int((end - datetime.now().timestamp()) / 86280))[-1] == '4' else 'дней')
         else:
             info = """
 Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
@@ -381,6 +409,7 @@ def get_info(user_id):
         info = """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id, user_id)
 
     return info
+
 
 @admin
 def whois(update, context):
@@ -393,6 +422,7 @@ def whois(update, context):
                                  """Данную команду нужно использовать как ответ на сообщение интересующего вас пользователя."""
                                  , parse_mode='HTML')
 
+
 @admin
 def deletepair(update, context):
     try:
@@ -402,7 +432,7 @@ def deletepair(update, context):
         db.close()
         message = """
 Пара <b>%s:%s</b> удалена.
-                """ % (exchange,symbol)
+                """ % (exchange, symbol)
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
     except:
         message = """
@@ -410,6 +440,7 @@ def deletepair(update, context):
 <pre>/deletepair exchange symbol</pre>
                 """
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
+
 
 @admin
 def chngprice(update, context):
@@ -430,10 +461,11 @@ def chngprice(update, context):
                 """
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
+
 @admin
 def chngpayment(update, context):
     try:
-        _, payment = update.message.text.repalce('/chngpayment','')
+        _, payment = update.message.text.repalce('/chngpayment', '')
         db = sqlcon.Database(database_url=variables['database']['link'])
         db.change_settings_payment(payment)
         db.close()
@@ -473,14 +505,13 @@ def adddays(update, context):
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text=message, parse_mode='HTML')
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     job_queue = updater.job_queue
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("start", start))
 
-#user commands
+    # user commands
     """
     /listpairs - список торговых пар
     /pay - оплатить подписку
@@ -493,27 +524,27 @@ if __name__=="__main__":
 
     pay_conversation = ConversationHandler(entry_points=[CommandHandler("pay", pay_request)],
                                            states={
-                                               PAY_RESPONSE:[MessageHandler(Filters.photo, pay_response)]
+                                               PAY_RESPONSE: [MessageHandler(Filters.photo, pay_response)]
                                            },
                                            fallbacks=[CommandHandler('cancel', cancel)]
                                            )
-    ask_conversation = ConversationHandler(entry_points=[CommandHandler("ask", ask_request)],
-                                           states={
-                                               ASK_RESPONSE:[MessageHandler(Filters.text, ask_response)],
-                                           },
-                                           fallbacks = [CommandHandler('cancel',cancel)]
-                                           )
-    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_buttons)],
-                                           states={
-                                               ANSWER_RESPONSE:[MessageHandler(Filters.chat((os.environ['ADMIN_ID'])) & Filters.text, answer_response)],
-                                           },
-                                           fallbacks = [CommandHandler('cancel',cancel)]
-                                           )
+    # ask_conversation = ConversationHandler(entry_points=[CommandHandler("ask", ask_request)],
+    #                                        states={
+    #                                            ASK_RESPONSE: [MessageHandler(Filters.text, ask_response)],
+    #                                        },
+    #                                        fallbacks=[CommandHandler('cancel', cancel)]
+    #                                        )
+    # answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_buttons)],
+    #                                           states={
+    #                                               ANSWER_RESPONSE: [MessageHandler(Filters.text, answer_response)],
+    #                                           },
+    #                                           fallbacks=[CommandHandler('cancel', cancel)]
+    #                                           )
 
     dp.add_handler(pay_conversation)
-    dp.add_handler(ask_conversation)
-    dp.add_handler(answer_conversation)
-#admin commands
+    # dp.add_handler(ask_conversation)
+    # dp.add_handler(answer_conversation)
+    # admin commands
 
     dp.add_handler(CommandHandler("admin_help", admin_help))
     dp.add_handler(CommandHandler("paid", paid))
@@ -534,15 +565,13 @@ if __name__=="__main__":
     /chngpayment - сменить реквизиты оплаты - аналогично как с ценой.
     /adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
     /whois - узнать id_пользователя
-    
+
     """
 
     updater.dispatcher.add_handler(CallbackQueryHandler(pay_buttons))
 
-    updater.start_webhook(listen="0.0.0.0",
-                          port=PORT,
-                          url_path=variables['telegram']['token'],
-                        webhook_url = 'https://murmuring-inlet-95645.herokuapp.com/' + variables['telegram']['token'])
+    # Запуск бота
+    updater.start_polling()
     updater.idle()
 
 
