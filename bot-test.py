@@ -118,9 +118,9 @@ def listpairs(update, context, admin_id):
     db.close()
     message_rows = [f"""<pre>{exchange}:{symbol}</pre>""" for symbol, exchange in data]
     message = f"""
-    <pre>Всего пар: {len(data)}</pre>
+<pre>Всего пар: {len(data)}</pre>
 
-    Пары, по которым доступен поиск:
+Пары, по которым доступен поиск:
 
     """ + ('\n').join(message_rows)
 
@@ -227,6 +227,7 @@ def cancel(update, context):
 def pay_buttons(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     admin_id = update.callback_query.from_user
+    print('Button ', admin_id)
     query.answer()
     if 'accept' in query.data:
         _, user_id, __ = query.data.split(' ')
