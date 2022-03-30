@@ -33,6 +33,8 @@ PAY_RESPONSE = range(1)
 ASK_RESPONSE = range(1)
 ANSWER_RESPONSE  = range(1)
 
+#Globals
+user_id_to_response = None
 
 def common_user(func):
     def check_user(update, contex, *args, **kwargs):
@@ -226,19 +228,21 @@ def answer_buttons(update: Update, context: CallbackContext) -> None:
     query.answer()
 
     if 'reply_to' in query.data:
-        _, user_id, __ = query.data.split(' ')
+        global user_id_to_response
+        _, user_id_to_response, __ = query.data.split(' ')
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""", parse_mode='HTML')
-        global user_id
         return ANSWER_RESPONSE
 
 @admin
 def answer_response(update, context):
+    global user_id_to_response
     answer = update.message.text
     updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
                              parse_mode='HTML')
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id),
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id_to_response,
+                                                                                                                                                 user_id_to_response),
                              parse_mode='HTML')
-    del user_id
+    user_id_to_response = None
     return ConversationHandler.END
 
 def accept(user_id):
