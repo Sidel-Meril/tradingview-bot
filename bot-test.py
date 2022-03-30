@@ -512,9 +512,9 @@ if __name__=="__main__":
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )
 
-    dispatcher.add_handler(pay_conversation)
-    dispatcher.add_handler(ask_conversation)
-    dispatcher.add_handler(answer_conversation)
+    dp.add_handler(pay_conversation)
+    dp.add_handler(ask_conversation)
+    dp.add_handler(answer_conversation)
 #admin commands
 
     dp.add_handler(CommandHandler("admin_help", admin_help))
