@@ -51,7 +51,7 @@ class ChromeDriver:
         if not getattr(self, 'driver', None):
             chromeOptions = webdriver.ChromeOptions()
             chrome_options = webdriver.ChromeOptions()
-            chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
+            # chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
             chrome_options.add_argument("--headless")
             chrome_options.add_argument("--disable-dev-shm-usage")
             chrome_options.add_argument("--no-sandbox")
@@ -108,7 +108,8 @@ class ChromeDriver:
             sleep(0.1)
         "accept cookies"
         try:
-            accept_window = self.driver.find_element(by=By.XPATH, value='//div[@class="main-content-2gM8G-uJ"]')
+            # accept_window = self.driver.find_element(by=By.XPATH, value='//div[@class="main-content-2gM8G-uJ"]')
+            accept_window = self.driver.find_element(by=By.XPATH, value="////*[contains(text(), 'This website uses cookies')]")
             accept_line = accept_window.find_element(by=By.XPATH, value='//div[@class="actions-2gM8G-uJ"]')
             print('accept for cookies found')
             accept = accept_line.find_elements(by=By.XPATH, value="//button")
@@ -131,7 +132,8 @@ class ChromeDriver:
         return chat_window.screenshot_as_png
 
 def get_screenshot(symbol, interval):
-    examp = ChromeDriver(os.environ.get('CHROMEDRIVER_PATH'), 'cookie.dump', True)
+    # examp = ChromeDriver(os.environ.get('CHROMEDRIVER_PATH'), 'cookie.dump', True)
+    examp = ChromeDriver('chromedriver.exe', 'cookie.dump', True)
     if next((False for item in examp.ranges.values() if interval in list(item.values())), True):
         return False
     link = 'https://www.tradingview.com/chart/?symbol={SYMBOL}&interval={interval}'.format(SYMBOL=symbol, interval=interval)
