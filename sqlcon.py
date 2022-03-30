@@ -68,7 +68,7 @@ class Database:
 
     @_conn
     def change_settings(self, setting_name, value):
-        query = """UPDATE botsettings
+        query = """UPDATE bot_settings
         SET value = '%s' WHERE setting_name = '%s';
         """ % (value, setting_name)
         self.cur.execute(query)
