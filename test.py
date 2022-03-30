@@ -162,7 +162,7 @@ def ask_request(update, context):
 def ask_response(update, message):
     user_id = update.message.chat.id
     user_message = update.message.text
-    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} {os.environ["ADMIN_ID"]}')]]
+    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} 1')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     updater.bot.send_message(variables['telegram']['admin_id'], text="""<b>Сообщение от пользователя</b>
     %s
@@ -201,8 +201,8 @@ def pay_request(update, context):
 
 def pay_response(update, context):
     user_id = update.message.chat.id
-    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id}'),
-                 InlineKeyboardButton('Отклонить', callback_data=f'decline {user_id}')]]
+    keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id} 1'),
+                 InlineKeyboardButton('Отклонить', callback_data=f'decline {user_id} 1')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     try:
         updater.bot.send_photo(variables['telegram']['admin_id'], photo=update.message.photo[-1].file_id,
@@ -269,7 +269,7 @@ def accept(user_id):
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята")
     updater.bot.send_message(variables['telegram']['admin_id'],
                              """Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (
-                                 user_id), parse_mode='HTML')
+                                 user_id, user_id), parse_mode='HTML')
 
 
 def decline(user_id):
@@ -277,7 +277,7 @@ def decline(user_id):
                              "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
     updater.bot.send_message(variables['telegram']['admin_id'],
                              """Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (
-                                 user_id),
+                                 user_id, user_id),
                              parse_mode='HTML')
 
 
@@ -526,22 +526,22 @@ if __name__ == "__main__":
                                            },
                                            fallbacks=[CommandHandler('cancel', cancel)]
                                            )
-    # ask_conversation = ConversationHandler(entry_points=[CommandHandler("ask", ask_request)],
-    #                                        states={
-    #                                            ASK_RESPONSE: [MessageHandler(Filters.text, ask_response)],
-    #                                        },
-    #                                        fallbacks=[CommandHandler('cancel', cancel)]
-    #                                        )
-    # answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_buttons)],
-    #                                           states={
-    #                                               ANSWER_RESPONSE: [MessageHandler(Filters.text, answer_response)],
-    #                                           },
-    #                                           fallbacks=[CommandHandler('cancel', cancel)]
-    #                                           )
+    ask_conversation = ConversationHandler(entry_points=[CommandHandler("ask", ask_request)],
+                                           states={
+                                               ASK_RESPONSE: [MessageHandler(Filters.text, ask_response)],
+                                           },
+                                           fallbacks=[CommandHandler('cancel', cancel)]
+                                           )
+    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_buttons)],
+                                              states={
+                                                  ANSWER_RESPONSE: [MessageHandler(Filters.text, answer_response)],
+                                              },
+                                              fallbacks=[CommandHandler('cancel', cancel)]
+                                              )
 
     dp.add_handler(pay_conversation)
-    # dp.add_handler(ask_conversation)
-    # dp.add_handler(answer_conversation)
+    dp.add_handler(ask_conversation)
+    dp.add_handler(answer_conversation)
     # admin commands
 
     dp.add_handler(CommandHandler("admin_help", admin_help))

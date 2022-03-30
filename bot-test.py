@@ -221,7 +221,7 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
         _, user_id, __ = query.data.split(' ')
         decline(int(user_id))
 
-def answer_buttons(update: Update, context: CallbackContext) -> None:
+def answer_buttons(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
@@ -237,7 +237,7 @@ def answer_response(update, context):
     answer = update.message.text
     updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
                              parse_mode='HTML')
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id_to_response,
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Вы ответили пользователю <a href="tg://user?id=%s">id%s</a>""" %(user_id_to_response,
                                                                                                                                                  user_id_to_response),
                              parse_mode='HTML')
     user_id_to_response = None
@@ -250,11 +250,11 @@ def accept(user_id):
     db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp())+_duration)
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята")
     updater.bot.send_message(variables['telegram']['admin_id'],
-                             """Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (user_id), parse_mode='HTML')
+                             """Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (user_id, user_id ), parse_mode='HTML')
 
 def decline(user_id):
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
-    updater.bot.send_message(variables['telegram']['admin_id'], """Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id),
+    updater.bot.send_message(variables['telegram']['admin_id'], """Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id),
                              parse_mode = 'HTML')
 
 @admin
