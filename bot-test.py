@@ -3,8 +3,10 @@
 
 import os
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Updater, MessageHandler, CommandHandler, CallbackQueryHandler, CallbackContext, filters
+from telegram.ext import Updater, MessageHandler, ConversationHandler, CommandHandler, CallbackQueryHandler, \
+    CallbackContext
 from telegram.ext.dispatcher import run_async
+from telegram.ext.filters import Filters
 import json
 import random
 from datetime import datetime, date
@@ -22,9 +24,15 @@ variables = {
   }
 }
 
-#init bot
+#Init bot
 updater = Updater(variables['telegram']['token'], workers=10, use_context=True)
 PORT = int(os.environ.get('PORT', '8443'))
+
+#Conversations
+PAY_RESPONSE = range(1)
+ASK_RESPONSE = range(1)
+ANSWER_RESPONSE  = range(1)
+
 
 def common_user(func):
     def check_user(update, contex, *args, **kwargs):
@@ -79,7 +87,7 @@ def paid_plane_user(func):
     return check_user
 
 def admin(func):
-    def wrapper(update, context, *args, **kwargs):
+    def check_user(update, context, *args, **kwargs):
         user_id = update.message.chat.id
         print(user_id, variables['telegram']['admin_id'], user_id == variables['telegram']['admin_id'])
         if user_id != variables['telegram']['admin_id']:
@@ -87,22 +95,7 @@ def admin(func):
         print('Hi, Admin')
         res = func(update, context, *args, **kwargs)
         return res
-    return wrapper
-
-
-def test(update: Update, context: CallbackContext) -> None:
-    """Sends a message with three inline buttons attached."""
-    keyboard = [
-        [
-            InlineKeyboardButton("Option 1", callback_data='1'),
-            InlineKeyboardButton("Option 2", callback_data='2'),
-        ],
-        [InlineKeyboardButton("Option 3", callback_data='3')],
-    ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    update.message.reply_text('Please choose:', reply_markup=reply_markup)
+    return check_user
 
 @common_user
 def start(update, context):
@@ -132,7 +125,7 @@ def req(update, context):
     message = """Введите правильно название пары и таймфрейм.
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-    dp.add_handler(MessageHandler(filters.Filters.text, get_screenshot))
+    dp.add_handler(MessageHandler(Filters.chat((user_id)) & Filters.text, get_screenshot))
 
 @paid_plane_user
 def get_screenshot(update, context):
@@ -147,29 +140,34 @@ def get_screenshot(update, context):
         print(e)
         updater.bot.send_message(chat_id=user_id, text="Ничего не найдено :( Введите название пары/таймфрейма правильно", parse_mode='HTML')
 
+
+
 @common_user
-def ask(update, context):
+def ask_request(update, context):
     user_id = update.message.chat.id
-    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ваше сообщение для администрации.""",
+    updater.bot.send_message(chat_id=user_id, text="""Введите ваше сообщение для администрации.""",
                              parse_mode='HTML')
-    def user_message(update, message, user_id=user_id):
-        user_message = update.message.text
-        keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} {os.environ["ADMIN_ID"]}')]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        updater.bot.send_message(variables['telegram']['admin_id'], text="""<b>Сообщение от пользователя</b>
-        %s
+    return ASK_RESPONSE
 
-        <i>%s</i>    
-            """ % (get_info(user_id), user_message), parse_mode='HTML',
-                                 reply_markup=reply_markup)
-        updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение администратору. Ожидайте ответа.")
 
-    dp.add_handler(MessageHandler(filters.Filters.text, user_message))
+def ask_response(update, message):
+    user_id = update.message.chat.id
+    user_message = update.message.text
+    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} {os.environ["ADMIN_ID"]}')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    updater.bot.send_message(variables['telegram']['admin_id'], text="""<b>Сообщение от пользователя</b>
+    %s
+
+    <i>%s</i>    
+        """ % (get_info(user_id), user_message), parse_mode='HTML',
+                             reply_markup=reply_markup)
+    updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение администратору. Ожидайте ответа.")
+    return ConversationHandler.END
 
 
 
 @common_user
-def pay(update, context):
+def pay_request(update, context):
     user_id = update.message.chat.id
     db = sqlcon.Database(database_url=variables['database']['link'])
     data = db.get_users()
@@ -181,7 +179,7 @@ def pay(update, context):
         message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
         """
         updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-        return 0
+        return ConversationHandler.END
 
     message=f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
     
@@ -191,10 +189,9 @@ def pay(update, context):
 Пришлите скриншот оплаты (квитанцию) боту в чат, и он активирует Вам доступ.
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-    updater.dispatcher.add_handler(MessageHandler(filters.Filters.photo, check_pay))
 
 @common_user
-def check_pay(update, context):
+def pay_response(update, context):
     user_id = update.message.chat.id
     keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id} {os.environ["ADMIN_ID"]}'),
                  InlineKeyboardButton('Отклонить',callback_data=f'decline {user_id} {os.environ["ADMIN_ID"]}')]]
@@ -206,14 +203,16 @@ def check_pay(update, context):
     except Exception as e:
         print(e)
         updater.bot.send_message(user_id, "Что-то пошло не так :( Попробуйте еще раз отправить скриншот.")
-        updater.dispatcher.add_handler(MessageHandler(filters.Filters.photo, check_pay))
-    # dp.add_handler(CommandHandler("accept", accept))
-    # dp.add_handler(CommandHandler("decline", decline))
+    return ConversationHandler.END
 
-def buttons(update: Update, context: CallbackContext) -> None:
+@common_user
+def cancel(update, context):
+    user_id = update.message.chat.id
+    updater.bot.send_message(user_id, "Текущая операция отменена.")
+    return ConversationHandler.END
+
+def pay_buttons(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    # CallbackQueries need to be answered, even if no notification to the user is needed
-    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     query.answer()
     if 'accept' in query.data:
         _, user_id, __ = query.data.split(' ')
@@ -221,24 +220,26 @@ def buttons(update: Update, context: CallbackContext) -> None:
     elif 'decline' in query.data:
         _, user_id, __ = query.data.split(' ')
         decline(int(user_id))
-    elif 'reply_to' in query.data:
+
+def answer_buttons(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    query.answer()
+
+    if 'reply_to' in query.data:
         _, user_id, __ = query.data.split(' ')
         updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Введите ответ пользователю.""", parse_mode='HTML')
-        @admin
-        def answer(update, message, user_id=user_id):
-            answer = update.message.text
-            updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
-                                     parse_mode='HTML')
-            updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id),
-                                     parse_mode='HTML')
+        global user_id
+        return ANSWER_RESPONSE
 
-        dp.add_handler(MessageHandler(filters.Filters.text, answer))
-
-
-
-
-
-
+@admin
+def answer_response(update, context):
+    answer = update.message.text
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
+                             parse_mode='HTML')
+    updater.bot.send_message(chat_id=variables['telegram']['admin_id'], text="""Вы ответили пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id, user_id),
+                             parse_mode='HTML')
+    del user_id
+    return ConversationHandler.END
 
 def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
@@ -247,11 +248,12 @@ def accept(user_id):
     db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp())+_duration)
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята")
     updater.bot.send_message(variables['telegram']['admin_id'],
-                             "Запрос принят. Уведомление успешно доставлено пользователю %i." % (user_id))
+                             """Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" % (user_id), parse_mode='HTML')
 
 def decline(user_id):
     updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, что-то пошло не так :( \nОтправьте вашу заявку еще раз.")
-    updater.bot.send_message(variables['telegram']['admin_id'], "Запрос отклонен. Уведомление успешно доставлено пользователю %i." %(user_id))
+    updater.bot.send_message(variables['telegram']['admin_id'], """Запрос отклонен. Уведомление успешно доставлено пользователю <a href="tg://user?id=%i">id%i</a>""" %(user_id),
+                             parse_mode = 'HTML')
 
 @admin
 def admin_help(update, context):
@@ -489,7 +491,27 @@ if __name__=="__main__":
     dp.add_handler(CommandHandler("request", req))
     dp.add_handler(CommandHandler("ask", ask))
 
+    pay_conversation = ConversationHandler(entry_points=[CommandHandler("pay", pay_request)],
+                                           states={
+                                               PAY_RESPONSE:[MessageHandler(Filters.photo, pay_response)]
+                                           },
+                                           fallbacks=[CommandHandler('cancel', cancel)]
+                                           )
+    ask_conversation = ConversationHandler(entry_points=[CommandHandler("ask", ask_request)],
+                                           states={
+                                               ASK_RESPONSE:[MessageHandler(Filters.text, ask_response)],
+                                           },
+                                           fallbacks = [CommandHandler('cancel',cancel)]
+                                           )
+    answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(answer_button)],
+                                           states={
+                                               ANSWER_RESPONSE:[MessageHandler(Filters.text, answer_response)],
+                                           },
+                                           fallbacks = [CommandHandler('cancel',cancel)]
+                                           )
+
 #admin commands
+
     dp.add_handler(CommandHandler("admin_help", admin_help))
     dp.add_handler(CommandHandler("paid", paid))
     dp.add_handler(CommandHandler("writeall", writeall))
@@ -513,7 +535,7 @@ if __name__=="__main__":
     
     """
 
-    updater.dispatcher.add_handler(CallbackQueryHandler(buttons))
+    updater.dispatcher.add_handler(CallbackQueryHandler(pay_buttons))
 
     updater.start_webhook(listen="0.0.0.0",
                           port=PORT,
