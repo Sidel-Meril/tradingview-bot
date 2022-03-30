@@ -113,6 +113,7 @@ def start(update, context):
 
 @common_user
 def listpairs(update, context):
+    user_id = update.message.chat.id
     db = sqlcon.Database(database_url=variables['database']['link'])
     data = db.get_pairs()
     db.close()
@@ -124,7 +125,7 @@ def listpairs(update, context):
 
     """ + ('\n').join(message_rows)
 
-    updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+    updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
 
 def req(update, context):
     user_id = update.message.chat.id
