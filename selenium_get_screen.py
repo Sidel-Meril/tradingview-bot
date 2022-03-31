@@ -90,7 +90,7 @@ class ChromeDriver:
         self.cookies=self.driver.get_cookies()
 
     @_start
-    def get(self, url, source, range, cookies=False):
+    def get(self, url, source, range, cookies=True):
         self.cookies = [{'domain': '.tradingview.com', 'expiry': 1924905600, 'httpOnly': False, 'name': 'tv_ecuid', 'path': '/', 'secure': False, 'value': '8c297591-f2cb-4696-b803-8545450b2bef'},
                         {'domain': '.tradingview.com', 'httpOnly': False, 'name': 'etg', 'path': '/', 'secure': False, 'value': '8c297591-f2cb-4696-b803-8545450b2bef'},
                         {'domain':'.tradingview.com', 'httpOnly': False, 'name': 'png', 'path': '/', 'secure': False, 'value': '8c297591-f2cb-4696-b803-8545450b2bef'},
