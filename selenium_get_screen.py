@@ -104,10 +104,15 @@ class ChromeDriver:
         self.driver.get(url)
         self.driver.implicitly_wait(10)
 
-        while self._check_exists(By.XPATH, "////*[contains(text(), 'This website uses cookies')]"):
+        chat_window = self.driver.find_element(by=By.XPATH, value='.//div[@class="chart-container-border"]')
+        while self._check_exists(By.XPATH, './/div[@class="chart-gui-wrapper"'):
             sleep(0.1)
-        "accept cookies"
+
         sleep(0.1)
+
+        # while self._check_exists(By.XPATH, "////*[contains(text(), 'This website uses cookies')]"):
+        #     sleep(0.1)
+        "accept cookies"
         test_el =self.driver.find_element(by=By.XPATH, value="//*[contains(text(), 'This website uses cookies')]")
         print(self.driver.page_source)
         try:
@@ -121,9 +126,7 @@ class ChromeDriver:
             print(e)
             pass
 
-        chat_window = self.driver.find_element(by=By.XPATH, value='.//div[@class="chart-container-border"]')
-        while self._check_exists(By.XPATH, './/div[@class="chart-gui-wrapper"'):
-            sleep(0.1)
+
         sleep(0.1)
 
         # bio = BytesIO()
