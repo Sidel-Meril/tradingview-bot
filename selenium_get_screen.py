@@ -45,7 +45,6 @@ class ChromeDriver:
         self.headless = headless
         with open(r'data-ranges.json', 'r') as f:
             self.ranges = json.load(f)
-        self.cookies = None
 
     def _create_driver(self):
         if not getattr(self, 'driver', None):
@@ -89,9 +88,6 @@ class ChromeDriver:
         self.driver.get(source)
         self.driver.implicitly_wait(10)
         self.cookies=self.driver.get_cookies()
-        # print(self.cookies)
-        # with open('cookie.dump','wb') as f:
-        #     pickle.dump(self.cookies,f)
 
     @_start
     def get(self, url, source, range, cookies=False):
@@ -122,6 +118,7 @@ class ChromeDriver:
         password.send_keys(login_data['password'])
         log_in = self.driver.find_element(by = By.XPATH, value=".//span[@class='tv-button__loader']")
         log_in.click()
+        print(len(self.driver.get_cookies()))
         sleep(5)
 
         self.driver.implicitly_wait(10)
