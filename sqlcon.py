@@ -227,10 +227,4 @@ class Database:
             self.conn.close()
 
 if __name__ == "__main__":
-    import numpy as np
-    db = Database('postgres://phsiksrqngenoy:f7c9ca60d11cdd47b6c76bd479706be8183f57a08f0b552b210550d10b4e1596@ec2-18-214-134-226.compute-1.amazonaws.com:5432/d46les6a5j0asm')
-    db.create_tables()
-    db.add_cookies('[{"domain": ".tradingview.com", "expiry": 1924905600, "httpOnly": false, "name": "tv_ecuid", "path": "/", "secure": false, "value": "8c297591-f2cb-4696-b803-8545450b2bef"}, {"domain": ".tradingview.com", "httpOnly": false, "name": "etg", "path": "/", "secure": false, "value": "8c297591-f2cb-4696-b803-8545450b2bef"}, {"domain": ".tradingview.com", "httpOnly": false, "name": "png", "path": "/", "secure": false, "value": "8c297591-f2cb-4696-b803-8545450b2bef"}, {"domain": ".tradingview.com", "httpOnly": false, "name": "cachec", "path": "/", "secure": false, "value": "8c297591-f2cb-4696-b803-8545450b2bef"}, {"domain": ".tradingview.com", "expiry": 1656793930, "httpOnly": true, "name": "sessionid", "path": "/", "sameSite": "Lax", "secure": true, "value": "0ly8z4zl9k0wgjwtmnyv5jkte7igtftt"}, {"domain": ".tradingview.com", "expiry": 1679862726, "httpOnly": true, "name": "device_t", "path": "/", "sameSite": "None", "secure": true, "value": "ZzlFMkFnOjA.E27rTVW1-3J7hnrJOMnKN1kSQMONbYF3725x-QKNPmU"}]'
-)
-    c = db.get_cookies()
-    print(c)
+    pass

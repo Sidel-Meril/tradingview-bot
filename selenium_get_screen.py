@@ -48,7 +48,6 @@ class ChromeDriver:
 
     def _create_driver(self):
         if not getattr(self, 'driver', None):
-            chromeOptions = webdriver.ChromeOptions()
             chrome_options = webdriver.ChromeOptions()
             chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
             chrome_options.add_argument("--headless")
@@ -93,37 +92,11 @@ class ChromeDriver:
         return self.driver.get_cookies()
 
     @_start
-    def get(self, url, source, range, cookies):
-        # if cookies:
+    def get(self, url, source, cookies):
         self.driver.get(source)
         self.driver.implicitly_wait(10)
         for cookie in cookies:
             self.driver.add_cookie(cookie)
-
-        # login_url = 'https://en.tradingview.com/accounts/signin/'
-        # login_data = {
-        #                  'username': os.environ['TRADE_LOGIN'],
-        #                  'password': os.environ['TRADE_PASSWORD']
-        #              }
-        #
-        # self.driver.get(login_url)
-        # self.driver.implicitly_wait(10)
-        # sing_in_by_email = self.driver.find_element(by=By.XPATH, value=".//span[@class='tv-signin-dialog__social tv-signin-dialog__toggle-email js-show-email']")
-        # sing_in_by_email.click()
-        # username = self.driver.find_element(by=By.XPATH, value=".//input[@name='username']")
-        # username.click()
-        # username.clear()
-        # username.send_keys(login_data['username'])
-        # self.driver.implicitly_wait(10)
-        # password = self.driver.find_element(by=By.XPATH, value=".//input[@name='password']")
-        # password.click()
-        # password.clear()
-        # password.send_keys(login_data['password'])
-        # log_in = self.driver.find_element(by = By.XPATH, value=".//span[@class='tv-button__loader']")
-        # log_in.click()
-        # sleep(5)
-        # print(len(self.driver.get_cookies()))
-        # print(self.driver.get_cookies())
 
         self.driver.implicitly_wait(10)
         self.driver.get(url)
@@ -165,8 +138,8 @@ def get_screenshot(symbol, interval, cookies):
     # examp = ChromeDriver('chromedriver.exe', 'cookie.dump', True)
     if next((False for item in examp.ranges.values() if interval in list(item.values())), True):
         return False
-    link = 'https://www.tradingview.com/chart/?symbol={SYMBOL}&interval={interval}'.format(SYMBOL=symbol, interval=interval, cookies = cookies)
-    image = examp.get(link, source = 'https://www.tradingview.com/', range=interval)
+    link = 'https://www.tradingview.com/chart/?symbol={SYMBOL}&interval={interval}'.format(SYMBOL=symbol, interval=interval)
+    image = examp.get(link, source = 'https://www.tradingview.com/', cookies = cookies)
     return image
 
 def log_in(username, password):
