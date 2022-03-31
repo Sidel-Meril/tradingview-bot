@@ -108,6 +108,8 @@ class ChromeDriver:
                      }
         source = 'https://www.tradingview.com/'
 
+        sleep(5)
+
         self.driver.get(login_url)
         self.driver.implicitly_wait(10)
         sing_in_by_email = self.driver.find_element(by=By.XPATH, value=".//span[@class='tv-signin-dialog__social tv-signin-dialog__toggle-email js-show-email']")
