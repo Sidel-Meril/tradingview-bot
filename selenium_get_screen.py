@@ -102,7 +102,7 @@ class ChromeDriver:
                 self.driver.add_cookie(cookie)
         self.log_in(login_url='https://en.tradingview.com/accounts/signin/',
                     login_data={
-                        'login': os.environ['TRADE_LOGIN'],
+                        'username': os.environ['TRADE_LOGIN'],
                         'password': os.environ['TRADE_PASSWORD']
                     },
                     source='https://www.tradingview.com/'
