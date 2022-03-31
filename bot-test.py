@@ -367,6 +367,10 @@ def writeall_response(update, context, admin_id):
 def login(update, context, admin_id):
     try:
         _, username, password = update.message.text.split(' ')
+        message = f"""
+Выполняю вход на сайт от имени <b>{username}</b>...
+                        """
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
         value = json.dumps(selenium_get_screen.log_in(username, password))
         db = sqlcon.Database(database_url=variables['database']['link'])
         db.add_cookies(value)
@@ -375,7 +379,8 @@ def login(update, context, admin_id):
 Пользователь успешно залогинен.
                 """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-    except:
+    except Exception as e:
+        print(e)
         message = """
 Введите запрос в формате:
 <pre>/login username password</pre>
