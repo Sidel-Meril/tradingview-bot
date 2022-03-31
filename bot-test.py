@@ -2,13 +2,12 @@
 # -*- coding: UTF-8 -*-
 
 import os
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKeyboardMarkup
 from telegram.ext import Updater, MessageHandler, ConversationHandler, CommandHandler, CallbackQueryHandler, \
     CallbackContext
 from telegram.ext.dispatcher import run_async
 from telegram.ext.filters import Filters
-import json
-import random
+import numpy as np
 from datetime import datetime, date
 import sqlcon
 import os
@@ -29,10 +28,12 @@ updater = Updater(variables['telegram']['token'], workers=10, use_context=True)
 PORT = int(os.environ.get('PORT', '8443'))
 
 #Conversations
-PAY_RESPONSE,ASK_RESPONSE,ANSWER_RESPONSE  = 111, 222, 333
+PAY_RESPONSE,ASK_RESPONSE,ANSWER_RESPONSE, WRITEALL_RESPONSE, EDITTEXT_LABEL_REQUEST, EDITTEXT_TEXT_RESPONSE, \
+EDITTEXT_TEXT_REQUEST = range(7)
 
 #Globals
 user_id_to_response = None
+setting_label_to_edit = None
 
 def common_user(func):
     def check_user(update, contex, *args, **kwargs):
@@ -293,15 +294,11 @@ def admin_help(update, context, admin_id):
 @common_user
 def user_help(update, context):
     user_id = update.message.chat.id
-    help_message = """
-/listpairs - список торговых пар
-/pay - оплатить подписку
-/request - запросить скриншот
-/ask - задать вопрос
-    """
-    # set parse message mood
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    help_message = db.get_setting('help_user_text')
+    db.close()
 
-    updater.bot.send_message(chat_id=user_id, text=help_message)
+    updater.bot.send_message(chat_id=user_id, text=help_message, parse_mode = "HTML")
 
 @admin
 def paid(update, context, admin_id):
@@ -322,8 +319,8 @@ def paid(update, context, admin_id):
     for user, _, start, end in paid_users]
     message=f"""
 <b>Статистика использования бота</b>
-<pre>Всего пользователей: {len(data)}</pre>
-<pre>Платных подписок: {len(paid_users)}</pre>
+<b>Всего пользователей:</b> {len(data)}
+<b>Платных подписок:</b> {len(paid_users)}
 
 Пользователи, у которых оформлена подписка:
 
@@ -331,14 +328,19 @@ def paid(update, context, admin_id):
 
     updater.bot.send_message(chat_id=admin_id, text=message, parse_mode = 'HTML')
 
-
 @admin
 def writeall(update, context, admin_id):
+    message = """Введите ваше сообщение для пользователей."""
+    updater.bot.send_message(chat_id = admin_id, text = message)
+    return WRITEALL_RESPONSE
+
+@admin
+def writeall_response(update, context, admin_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     users = db.get_users()
     users = [user[0] for user in users]
     db.close()
-    res_text = update.message.text.replace('/writeall', '')
+    res_text = update.message.text
     for user_id in users:
         try:
             updater.bot.send_message(chat_id=user_id, text=res_text, parse_mode='HTML')
@@ -349,23 +351,23 @@ def writeall(update, context, admin_id):
             updater.bot.send_message(chat_id=admin_id,
                                      text="""Пользователь <a href="tg://user?id=%i">id%i</a> удалил бота, но останется в базе для статистики.""" % (user_id,user_id),
                                      parse_mode='HTML')
-
+    return ConversationHandler.END
 
 @admin
 def addpair(update, context, admin_id):
     try:
         _, exchange, symbol = update.message.text.split(' ')
         db = sqlcon.Database(database_url=variables['database']['link'])
-        db.add_pair(exchange, symbol)
+        db.add_pair(' ', symbol)
         db.close()
         message = """
-Пара <b>%s:%s</b> добавлена.
-                """ % (exchange,symbol)
+Пара <b>%s</b> добавлена.
+                """ % (symbol)
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
 Введите запрос в формате:
-<pre>/addpair exchange symbol</pre>
+<pre>/addpair symbol</pre>
                 """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
@@ -382,9 +384,9 @@ def get_info(user_id):
             user, _, start, end = data[user_row]
             info = """
 Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-<pre>Подписка оформлена</pre>
-<pre>%s / %s</pre>
-<pre>Oсталось: %i %s</pre>""" % (
+<b>Подписка оформлена</b>
+%s / %s
+<b>Oсталось:</b> %i %s""" % (
             user, user, date.fromtimestamp(start).isoformat(), date.fromtimestamp(end).isoformat(),
             int((end - datetime.now().timestamp()) / 86280),
             'дня' if str(int((end - datetime.now().timestamp()) / 86280))[-1] == '2' or
@@ -393,11 +395,59 @@ def get_info(user_id):
         else:
             info = """
 Пользователь <a href="tg://user?id=%i">id%i</a> найден в базе:
-<pre>Подписка не оформлена</pre>""" % (user_id, user_id)
+<b>Подписка не оформлена</b>""" % (user_id, user_id)
     else:
         info = """Пользователь <a href="tg://user?id=%i">id%i</a> не найден в базе.""" % (user_id, user_id)
 
     return info
+
+@admin
+def edittext(update, context, admin_id):
+    message_label_request = "Выберите настройку бота или текст, который хотите отредактировать"
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    data = db.get_settings()
+    settings_label = [row[0] for row in data]
+    db.close()
+    rows, last_row = settings_label[:-len(settings_label)%3], settings_label[-len(settings_label)%3:]
+    rows = np.array(rows).reshape((3,len(settings_label)//3)).tolist()
+    rows.extand(last_row)
+    reply_keyboard = rows
+    markup_key = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+    update.bot.send_message(admin_id, message_label_request, reply_keyboard = markup_key)
+    return EDITTEXT_LABEL_REQUEST
+
+@admin
+def edittext_label_request(update, context, admin_id):
+    global setting_label_to_edit
+    setting_label_to_edit = update.message.text
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    value = db.get_setting(setting_label_to_edit)
+    db.close()
+    message = f"""
+<b>Текущее значение настройки {setting_label_to_edit}:</b>
+<pre>{value}</pre>
+
+Введите текст ниже, если хотите изменить значение или нажмите /cancel для того, чтобы оставить без изменений.
+    """
+    update.bot.send_message(admin_id, message, parse_mode = 'HTML')
+    return EDITTEXT_TEXT_REQUEST
+
+@admin
+def edittext_text_request(update, context, admin_id):
+    global setting_label_to_edit
+    value = update.message.text
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    value = db.change_settings(setting_label_to_edit)
+    db.close()
+
+    message = f"""
+    <b>Новое значение настройки {setting_label_to_edit}:</b>
+    <pre>{value}</pre>
+        """
+    update.bot.send_message(admin_id, message, parse_mode = 'HTML')
+
+    return ConversationHandler.END
+
 
 @admin
 def whois(update, context, admin_id):
@@ -418,8 +468,8 @@ def deletepair(update, context, admin_id):
         db.del_pair(symbol)
         db.close()
         message = """
-Пара <b>%s:%s</b> удалена.
-                """ % (exchange,symbol)
+Пара удалена. <pre>%s</pre> 
+                """ % (symbol)
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
@@ -528,10 +578,28 @@ if __name__=="__main__":
                                            },
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )
+    writeall_conversation = ConversationHandler(entry_points=[CommandHandler('writeall', writeall)],
+                                                              states = {
+                                                                  WRITEALL_RESPONSE: [MessageHandler(Filters.text, writeall_response)]
+                                                              },
+                                                fallbacks = [CommandHandler('cancel', cancel)]
+                                                )
+    edittext_conversation = ConversationHandler(
+        entry_points= [CommandHandler('edittext', edittext)],
+        states = {
+            EDITTEXT_LABEL_REQUEST:[MessageHandler(Filters.text, edittext_label_request)],
+            EDITTEXT_TEXT_REQUEST: [MessageHandler(Filters.text, edittext_text_request)]
+        },
+        fallbacks = [CommandHandler('cancel', cancel)]
+    )
+
 
     dp.add_handler(pay_conversation)
     dp.add_handler(ask_conversation)
     dp.add_handler(answer_conversation)
+    dp.add_handler(writeall_conversation)
+    dp.add_handler(edittext_conversation)
+
 #admin commands
 
     dp.add_handler(CommandHandler("admin_help", admin_help))
@@ -539,8 +607,8 @@ if __name__=="__main__":
     dp.add_handler(CommandHandler("writeall", writeall))
     dp.add_handler(CommandHandler("addpair", addpair))
     dp.add_handler(CommandHandler("deletepair", deletepair))
-    dp.add_handler(CommandHandler("chngprice", chngprice))
-    dp.add_handler(CommandHandler("chngpayment", chngpayment))
+    # dp.add_handler(CommandHandler("chngprice", chngprice))
+    # dp.add_handler(CommandHandler("chngpayment", chngpayment))
     dp.add_handler(CommandHandler("adddays", adddays))
     dp.add_handler(CommandHandler("whois", whois))
 
@@ -549,8 +617,7 @@ if __name__=="__main__":
     /writeall - сделать всем рассылку - можно разослать какую-либо новость всем и сразу
     /addpair - добавить символ пары - с помощью команды, админ может добавить в список доступных пар новую
     /deletepair - удалить символ пары - с помощью команды, админ может удалить из списка доступных пар старую и ненужную,
-    /chngprice - сменить цену подписки - бот пишет после нажатия: Введите новую цену в долл. Админ пишет xx и отправляет. Бот пишет: цена изменена.
-    /chngpayment - сменить реквизиты оплаты - аналогично как с ценой.
+    /edittext - изменить настройки бота (реквизиты, текст сообщений бота, длительность подписки, стоимость)
     /adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
     /whois - узнать id_пользователя
     

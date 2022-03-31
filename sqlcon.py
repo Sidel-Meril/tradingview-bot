@@ -201,7 +201,7 @@ class Database:
 
 if __name__ == "__main__":
     db = Database('postgres://phsiksrqngenoy:f7c9ca60d11cdd47b6c76bd479706be8183f57a08f0b552b210550d10b4e1596@ec2-18-214-134-226.compute-1.amazonaws.com:5432/d46les6a5j0asm')
-    db.create_tables()
-    res= db.get_admins()
-    print( res)
+    db.add_settings("help_user_text", "Привет, пользователь! Здесь находится список команд, которыми ты можешь воспользоваться")
+    res = db.get_settings()
+    print(res)
     db.close()
