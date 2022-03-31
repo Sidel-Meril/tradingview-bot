@@ -106,10 +106,6 @@ class ChromeDriver:
                          'username': os.environ['TRADE_LOGIN'],
                          'password': os.environ['TRADE_PASSWORD']
                      }
-        sleep(5)
-
-        source = 'https://www.tradingview.com/'
-
 
         self.driver.get(login_url)
         self.driver.implicitly_wait(10)
@@ -126,6 +122,8 @@ class ChromeDriver:
         password.send_keys(login_data['password'])
         log_in = self.driver.find_element(by = By.XPATH, value=".//span[@class='tv-button__loader']")
         log_in.click()
+        sleep(5)
+
         self.driver.implicitly_wait(10)
         self.driver.get(url)
         self.driver.implicitly_wait(10)
