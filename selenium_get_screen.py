@@ -100,13 +100,30 @@ class ChromeDriver:
             self.driver.implicitly_wait(10)
             for cookie in self.cookies:
                 self.driver.add_cookie(cookie)
-        self.log_in(login_url='https://en.tradingview.com/accounts/signin/',
-                    login_data={
-                        'username': os.environ['TRADE_LOGIN'],
-                        'password': os.environ['TRADE_PASSWORD']
-                    },
-                    source='https://www.tradingview.com/'
-                    )
+
+        login_url = 'https://en.tradingview.com/accounts/signin/'
+        login_data = {
+                         'username': os.environ['TRADE_LOGIN'],
+                         'password': os.environ['TRADE_PASSWORD']
+                     }
+        source = 'https://www.tradingview.com/'
+
+        self.driver.get(login_url)
+        self.driver.implicitly_wait(10)
+        sing_in_by_email = self.driver.find_element(by=By.XPATH, value=".//span[@class='tv-signin-dialog__social tv-signin-dialog__toggle-email js-show-email']")
+        sing_in_by_email.click()
+        username = self.driver.find_element(by=By.XPATH, value=".//input[@name='username']")
+        username.click()
+        username.clear()
+        username.send_keys(login_data['username'])
+        self.driver.implicitly_wait(10)
+        password = self.driver.find_element(by=By.XPATH, value=".//input[@name='password']")
+        password.click()
+        password.clear()
+        password.send_keys(login_data['password'])
+        log_in = self.driver.find_element(by = By.XPATH, value=".//span[@class='tv-button__loader']")
+        log_in.click()
+        self.driver.implicitly_wait(10)
         self.driver.get(url)
         self.driver.implicitly_wait(10)
 
