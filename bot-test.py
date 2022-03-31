@@ -188,7 +188,8 @@ def pay_request(update, context):
     price, duration, payment_data = int(db.get_setting('price')), int(db.get_setting('term')), db.get_setting('payment')
     db.close()
     if user_plans[users.index(user_id)] == 'paid':
-        message = """Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
+        message = f"""Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
+Ваша подписка действительна до {date.fromtimestamp(data[users.index(user_id)][3]).isoformat()}
         """
         updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
         return ConversationHandler.END
@@ -261,7 +262,9 @@ def accept(user_id):
     db.edit_user_by_id(user_id, 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp())+_duration)
     admin_ids = [row[0] for row in db.get_admins()]
     db.close()
-    updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята")
+    updater.bot.send_message(user_id, "Оператор рассмотрел вашу заявку, оплата принята."
+                                      "\nВаша подписка действительна до "
+                                      f"{date.fromtimestamp(int(datetime.now().timestamp())+_duration).isoformat()}")
     for admin_id in admin_ids:
         updater.bot.send_message(admin_id,
                              f"""Запрос принят. Уведомление успешно доставлено пользователю <a href="tg://user?id={user_id}">id{user_id}</a>""", parse_mode='HTML')
@@ -283,8 +286,7 @@ def admin_help(update, context, admin_id):
 /writeall - сделать всем рассылку - можно разослать какую-либо новость всем и сразу
 /addpair - добавить символ пары - с помощью команды, админ может добавить в список доступных пар новую
 /deletepair - удалить символ пары - с помощью команды, админ может удалить из списка доступных пар старую и ненужную,
-/chngprice - сменить цену подписки - бот пишет после нажатия: Введите новую цену в долл. Админ пишет xx и отправляет. Бот пишет: цена изменена.
-/chngpayment - сменить реквизиты оплаты - аналогично как с ценой.
+/edittext - - изменить настройки бота (реквизиты, текст сообщений бота, длительность подписки, стоимость)
 /adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
 /whois - узнать id_пользователя
     """
@@ -361,13 +363,13 @@ def addpair(update, context, admin_id):
         db.add_pair(' ', symbol)
         db.close()
         message = """
-Пара <b>%s</b> добавлена.
-                """ % (symbol)
+Пара <b>%s:%s</b> добавлена.
+                """ % (exchange, symbol)
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
 Введите запрос в формате:
-<pre>/addpair symbol</pre>
+<pre>/addpair exchange symbol</pre>
                 """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
@@ -407,10 +409,9 @@ def edittext(update, context, admin_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
     data = db.get_settings()
     settings_label = [row[0] for row in data]
-    db.close()
-    rows, last_row = settings_label[:-len(settings_label)%3], settings_label[-len(settings_label)%3:]
-    rows = np.array(rows).reshape((3,len(settings_label)//3)).tolist()
-    rows.extand(last_row)
+    rows, last_row = settings_label[:-(len(settings_label)%3)], settings_label[-(len(settings_label)%3):]
+    rows = np.array(rows).reshape((len(settings_label)//3),3).tolist()
+    rows.append(last_row)
     reply_keyboard = rows
     markup_key = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
     update.bot.send_message(admin_id, message_label_request, reply_keyboard = markup_key)
@@ -437,7 +438,7 @@ def edittext_text_request(update, context, admin_id):
     global setting_label_to_edit
     value = update.message.text
     db = sqlcon.Database(database_url=variables['database']['link'])
-    value = db.change_settings(setting_label_to_edit)
+    db.change_settings(setting_label_to_edit, value)
     db.close()
 
     message = f"""
@@ -468,8 +469,8 @@ def deletepair(update, context, admin_id):
         db.del_pair(symbol)
         db.close()
         message = """
-Пара удалена. <pre>%s</pre> 
-                """ % (symbol)
+Пара удалена. <pre>%s:%s</pre> 
+                """ % (exchange, symbol)
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
@@ -478,46 +479,46 @@ def deletepair(update, context, admin_id):
                 """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
-@admin
-def chngprice(update, context, admin_id):
-    try:
-        _, price = update.message.text.split(' ')
-        price = int(price)
-        db = sqlcon.Database(database_url=variables['database']['link'])
-        db.change_settings('price',str(price))
-        db.close()
-        message = """
-Цена подписки теперь <b>%i долларов</b>.
-                """ % (price)
-        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-    except Exception as e:
-        print(e)
-        message = """
-Введите запрос в формате:
-<pre>/chngprice цена(только число)</pre>
-                """
-        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-
-@admin
-def chngpayment(update, context, admin_id):
-    try:
-        payment = update.message.text.replace('/chngpayment','')
-        db = sqlcon.Database(database_url=variables['database']['link'])
-        db.change_settings('payment', payment)
-        db.close()
-        message = """
-    Реквизиты для оплаты обновлены:
-     <pre>%s/pre>.
-                """ % (payment)
-        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-    except Exception as e:
-        print(e)
-        message = """
-            Введите запрос в формате:
-            <pre>/chngpayment реквизиты</pre>
-                """
-        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-
+# @admin
+# def chngprice(update, context, admin_id):
+#     try:
+#         _, price = update.message.text.split(' ')
+#         price = int(price)
+#         db = sqlcon.Database(database_url=variables['database']['link'])
+#         db.change_settings('price',str(price))
+#         db.close()
+#         message = """
+# Цена подписки теперь <b>%i долларов</b>.
+#                 """ % (price)
+#         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+#     except Exception as e:
+#         print(e)
+#         message = """
+# Введите запрос в формате:
+# <pre>/chngprice цена(только число)</pre>
+#                 """
+#         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+#
+# @admin
+# def chngpayment(update, context, admin_id):
+#     try:
+#         payment = update.message.text.replace('/chngpayment','')
+#         db = sqlcon.Database(database_url=variables['database']['link'])
+#         db.change_settings('payment', payment)
+#         db.close()
+#         message = """
+#     Реквизиты для оплаты обновлены:
+#      <pre>%s/pre>.
+#                 """ % (payment)
+#         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+#     except Exception as e:
+#         print(e)
+#         message = """
+#             Введите запрос в формате:
+#             <pre>/chngpayment реквизиты</pre>
+#                 """
+#         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+#
 
 @admin
 def adddays(update, context, admin_id):

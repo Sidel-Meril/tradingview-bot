@@ -200,8 +200,16 @@ class Database:
             self.conn.close()
 
 if __name__ == "__main__":
+    import numpy as np
     db = Database('postgres://phsiksrqngenoy:f7c9ca60d11cdd47b6c76bd479706be8183f57a08f0b552b210550d10b4e1596@ec2-18-214-134-226.compute-1.amazonaws.com:5432/d46les6a5j0asm')
-    db.add_settings("help_user_text", "Привет, пользователь! Здесь находится список команд, которыми ты можешь воспользоваться")
-    res = db.get_settings()
-    print(res)
+    data = db.get_settings()
+    print(data)
+    settings_label = [row[0] for row in data]
+    print(settings_label, len(settings_label)%3)
     db.close()
+    rows, last_row = settings_label[:-(len(settings_label)%3)], settings_label[-(len(settings_label)%3):]
+    print(rows, last_row)
+    rows = np.array(rows).reshape((len(settings_label)//3),3).tolist()
+    print(rows)
+    rows.append(last_row)
+    print(rows)
