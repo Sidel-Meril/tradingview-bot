@@ -29,7 +29,7 @@ PORT = int(os.environ.get('PORT', '8443'))
 
 #Conversations
 PAY_RESPONSE,ASK_RESPONSE,ANSWER_RESPONSE, WRITEALL_RESPONSE, EDITTEXT_LABEL_REQUEST, EDITTEXT_TEXT_RESPONSE, \
-EDITTEXT_TEXT_REQUEST = range(7)
+EDITTEXT_TEXT_REQUEST, GET_SCREENSHOT = range(8)
 
 #Globals
 user_id_to_response = None
@@ -133,7 +133,8 @@ def req(update, context):
     message = """Введите правильно название пары и таймфрейм.
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
-    dp.add_handler(MessageHandler(Filters.chat((user_id)) & Filters.text, get_screenshot))
+    return GET_SCREENSHOT
+
 
 @paid_plane_user
 def get_screenshot(update, context):
@@ -559,7 +560,14 @@ if __name__=="__main__":
     """
     dp.add_handler(CommandHandler("help", user_help))
     dp.add_handler(CommandHandler("listpairs", listpairs))
-    dp.add_handler(CommandHandler("request", req))
+
+    request_conversation = ConversationHandler(
+        entry_points=[CommandHandler("request", req)],
+        states={
+        GET_SCREENSHOT: [MessageHandler(Filters.text, get_screenshot)]
+        },
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
 
     pay_conversation = ConversationHandler(entry_points=[CommandHandler("pay", pay_request)],
                                            states={
@@ -600,6 +608,7 @@ if __name__=="__main__":
     dp.add_handler(answer_conversation)
     dp.add_handler(writeall_conversation)
     dp.add_handler(edittext_conversation)
+    dp.add_handler(request_conversation)
 
 #admin commands
 
@@ -608,8 +617,6 @@ if __name__=="__main__":
     dp.add_handler(CommandHandler("writeall", writeall))
     dp.add_handler(CommandHandler("addpair", addpair))
     dp.add_handler(CommandHandler("deletepair", deletepair))
-    # dp.add_handler(CommandHandler("chngprice", chngprice))
-    # dp.add_handler(CommandHandler("chngpayment", chngpayment))
     dp.add_handler(CommandHandler("adddays", adddays))
     dp.add_handler(CommandHandler("whois", whois))
 
