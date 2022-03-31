@@ -414,7 +414,7 @@ def edittext(update, context, admin_id):
     rows.append(last_row)
     reply_keyboard = rows
     markup_key = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-    update.bot.send_message(admin_id, message_label_request, reply_keyboard = markup_key)
+    updater.bot.send_message(admin_id, message_label_request, reply_keyboard = markup_key)
     return EDITTEXT_LABEL_REQUEST
 
 @admin
@@ -430,7 +430,7 @@ def edittext_label_request(update, context, admin_id):
 
 Введите текст ниже, если хотите изменить значение или нажмите /cancel для того, чтобы оставить без изменений.
     """
-    update.bot.send_message(admin_id, message, parse_mode = 'HTML')
+    updater.bot.send_message(admin_id, message, parse_mode = 'HTML')
     return EDITTEXT_TEXT_REQUEST
 
 @admin
@@ -445,7 +445,7 @@ def edittext_text_request(update, context, admin_id):
     <b>Новое значение настройки {setting_label_to_edit}:</b>
     <pre>{value}</pre>
         """
-    update.bot.send_message(admin_id, message, parse_mode = 'HTML')
+    updater.bot.send_message(admin_id, message, parse_mode = 'HTML')
 
     return ConversationHandler.END
 
@@ -552,10 +552,10 @@ if __name__=="__main__":
 
 #user commands
     """
-    /listpairs - список торговых пар
-    /pay - оплатить подписку
-    /request - запросить скриншот
-    /ask - задать вопрос
+/listpairs - список торговых пар
+/pay - оплатить подписку
+/request - запросить скриншот
+/ask - задать вопрос
     """
     dp.add_handler(CommandHandler("help", user_help))
     dp.add_handler(CommandHandler("listpairs", listpairs))
