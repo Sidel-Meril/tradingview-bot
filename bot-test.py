@@ -149,7 +149,7 @@ def get_screenshot(update, context):
         print(e)
         updater.bot.send_message(chat_id=user_id, text="Ничего не найдено :( Введите название пары/таймфрейма правильно", parse_mode='HTML')
 
-
+    return ConversationHandler.END
 
 @common_user
 def ask_request(update, context):
