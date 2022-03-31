@@ -89,9 +89,9 @@ class ChromeDriver:
         self.driver.get(source)
         self.driver.implicitly_wait(10)
         self.cookies=self.driver.get_cookies()
-
-        with open('cookie.dump','wb') as f:
-            pickle.dump(self.cookies,f)
+        # print(self.cookies)
+        # with open('cookie.dump','wb') as f:
+        #     pickle.dump(self.cookies,f)
 
     @_start
     def get(self, url, source, range, cookies=False):
@@ -100,7 +100,13 @@ class ChromeDriver:
             self.driver.implicitly_wait(10)
             for cookie in self.cookies:
                 self.driver.add_cookie(cookie)
-
+        self.log_in(login_url='https://en.tradingview.com/accounts/signin/',
+                    login_data={
+                        'login': os.environ['TRADE_LOGIN'],
+                        'password': os.environ['TRADE_PASSWORD']
+                    },
+                    source='https://www.tradingview.com/'
+                    )
         self.driver.get(url)
         self.driver.implicitly_wait(10)
 
@@ -144,6 +150,7 @@ def get_screenshot(symbol, interval):
     link = 'https://www.tradingview.com/chart/?symbol={SYMBOL}&interval={interval}'.format(SYMBOL=symbol, interval=interval)
     image = examp.get(link, source = 'https://www.tradingview.com/', range=interval)
     return image
+
 
 if __name__ == "__main__":
     start = time()
