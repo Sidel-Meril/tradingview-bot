@@ -373,7 +373,7 @@ def login(update, context, admin_id):
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
         value = json.dumps(selenium_get_screen.log_in(username, password))
         db = sqlcon.Database(database_url=variables['database']['link'])
-        db.add_cookies(value)
+        db.change_cookies(value)
         db.close()
         message = """
 Пользователь успешно залогинен.
