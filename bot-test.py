@@ -6,6 +6,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKe
 from telegram.ext import Updater, MessageHandler, ConversationHandler, CommandHandler, CallbackQueryHandler, \
     CallbackContext
 from telegram.ext.dispatcher import run_async
+import json
 from telegram.ext.filters import Filters
 import numpy as np
 from datetime import datetime, date
@@ -139,11 +140,15 @@ def req(update, context):
 @paid_plane_user
 def get_screenshot(update, context):
     user_id = update.message.chat.id
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    data = db.get_cookies()
+    db.close()
+    cookies = json.loads(data)
 
     try:
         pair, timeframe = update.message.text.split(' ')
         updater.bot.send_message(chat_id=user_id, text=f"Ищу <i>{pair}</i> <b>{timeframe}</b>", parse_mode='HTML')
-        screenshot = selenium_get_screen.get_screenshot(pair,timeframe)
+        screenshot = selenium_get_screen.get_screenshot(pair,timeframe,cookies)
         updater.dispatcher.bot.send_photo(chat_id=user_id, photo=screenshot)
     except Exception as e:
         print(e)
@@ -281,15 +286,17 @@ def decline(user_id):
 
 @admin
 def admin_help(update, context, admin_id):
-    user_id = update.message.chat.id
     help_message = """
+Список комманд администратора:
+    
 /paid - список оплативших - показывает когда и кто оплачивал и (в скобках желательно писать сколько кому осталось)
 /writeall - сделать всем рассылку - можно разослать какую-либо новость всем и сразу
 /addpair - добавить символ пары - с помощью команды, админ может добавить в список доступных пар новую
 /deletepair - удалить символ пары - с помощью команды, админ может удалить из списка доступных пар старую и ненужную,
-/edittext - - изменить настройки бота (реквизиты, текст сообщений бота, длительность подписки, стоимость)
+/edittext - изменить настройки бота (реквизиты, текст сообщений бота, длительность подписки, стоимость)
 /adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
 /whois - узнать id_пользователя
+/login - залогиниться
     """
 
     updater.bot.send_message(chat_id=admin_id, text=help_message)
@@ -355,6 +362,26 @@ def writeall_response(update, context, admin_id):
                                      text="""Пользователь <a href="tg://user?id=%i">id%i</a> удалил бота, но останется в базе для статистики.""" % (user_id,user_id),
                                      parse_mode='HTML')
     return ConversationHandler.END
+
+@admin
+def login(update, context, admin_id):
+    try:
+        _, username, password = update.message.text.split(' ')
+        value = json.dumps(selenium_get_screen.log_in(username, password))
+        db = sqlcon.Database(database_url=variables['database']['link'])
+        db.add_cookies(value)
+        db.close()
+        message = """
+Пользователь успешно залогинен.
+                """
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+    except:
+        message = """
+Введите запрос в формате:
+<pre>/login username password</pre>
+                """
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+
 
 @admin
 def addpair(update, context, admin_id):
@@ -619,6 +646,7 @@ if __name__=="__main__":
     dp.add_handler(CommandHandler("deletepair", deletepair))
     dp.add_handler(CommandHandler("adddays", adddays))
     dp.add_handler(CommandHandler("whois", whois))
+    dp.add_handler(CommandHandler("login", login))
 
     """
     /paid - список оплативших - показывает когда и кто оплачивал и (в скобках желательно писать сколько кому осталось)
@@ -628,6 +656,7 @@ if __name__=="__main__":
     /edittext - изменить настройки бота (реквизиты, текст сообщений бота, длительность подписки, стоимость)
     /adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
     /whois - узнать id_пользователя
+    /login - залогиниться
     
     """
 

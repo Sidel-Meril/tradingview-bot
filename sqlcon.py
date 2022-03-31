@@ -18,12 +18,17 @@ class Database:
     @_conn
     def create_tables(self):
         # Create user table
+        query="""CREATE TABLE cookies(
+        id int NOT NULL PRIMARY KEY,
+        value varchar(2000) NOT NULL
+        )"""
+        # Create user table
         # query="""CREATE TABLE bot_settings(
         # setting_name varchar(255) NOT NULL PRIMARY KEY,
         # value varchar(1000) NOT NULL
         # )"""
         #
-        # self.cur.execute(query)
+        self.cur.execute(query)
         # query="""CREATE TABLE admins(
         # admin_id bigint NOT NULL PRIMARY KEY
         # )"""
@@ -58,6 +63,28 @@ class Database:
         # self.cur.execute(query)
         self.conn.commit()
 
+    @_conn
+    def add_cookies(self, value, id=1):
+        query = """INSERT INTO cookies(id, value) VALUES ('%s', '%s')
+        """ % (id, value)
+        self.cur.execute(query)
+        self.conn.commit()
+
+    @_conn
+    def change_cookies(self, value, id=1):
+        query = """UPDATE cookies
+            SET value = '%s' WHERE id = '%i';
+            """ % (value, id)
+        self.cur.execute(query)
+        self.conn.commit()
+
+    @_conn
+    def get_cookies(self):
+        query = """SELECT * FROM cookies
+            """
+        self.cur.execute(query)
+        value = self.cur.fetchall()
+        return value[0]
 
     @_conn
     def add_settings(self, setting_name, value):
@@ -202,14 +229,8 @@ class Database:
 if __name__ == "__main__":
     import numpy as np
     db = Database('postgres://phsiksrqngenoy:f7c9ca60d11cdd47b6c76bd479706be8183f57a08f0b552b210550d10b4e1596@ec2-18-214-134-226.compute-1.amazonaws.com:5432/d46les6a5j0asm')
-    data = db.get_settings()
-    print(data)
-    settings_label = [row[0] for row in data]
-    print(settings_label, len(settings_label)%3)
-    db.close()
-    rows, last_row = settings_label[:-(len(settings_label)%3)], settings_label[-(len(settings_label)%3):]
-    print(rows, last_row)
-    rows = np.array(rows).reshape((len(settings_label)//3),3).tolist()
-    print(rows)
-    rows.append(last_row)
-    print(rows)
+    db.create_tables()
+    db.add_cookies('[{"domain": ".tradingview.com", "expiry": 1924905600, "httpOnly": false, "name": "tv_ecuid", "path": "/", "secure": false, "value": "8c297591-f2cb-4696-b803-8545450b2bef"}, {"domain": ".tradingview.com", "httpOnly": false, "name": "etg", "path": "/", "secure": false, "value": "8c297591-f2cb-4696-b803-8545450b2bef"}, {"domain": ".tradingview.com", "httpOnly": false, "name": "png", "path": "/", "secure": false, "value": "8c297591-f2cb-4696-b803-8545450b2bef"}, {"domain": ".tradingview.com", "httpOnly": false, "name": "cachec", "path": "/", "secure": false, "value": "8c297591-f2cb-4696-b803-8545450b2bef"}, {"domain": ".tradingview.com", "expiry": 1656793930, "httpOnly": true, "name": "sessionid", "path": "/", "sameSite": "Lax", "secure": true, "value": "0ly8z4zl9k0wgjwtmnyv5jkte7igtftt"}, {"domain": ".tradingview.com", "expiry": 1679862726, "httpOnly": true, "name": "device_t", "path": "/", "sameSite": "None", "secure": true, "value": "ZzlFMkFnOjA.E27rTVW1-3J7hnrJOMnKN1kSQMONbYF3725x-QKNPmU"}]'
+)
+    c = db.get_cookies()
+    print(c)
