@@ -604,33 +604,33 @@ if __name__=="__main__":
 
     pay_conversation = ConversationHandler(entry_points=[CommandHandler("pay", pay_request)],
                                            states={
-                                               PAY_RESPONSE:[MessageHandler(Filters.photo, pay_response)]
+                                               PAY_RESPONSE:[MessageHandler(Filters.photo, pay_response), CommandHandler('cancel', cancel)]
                                            },
                                            fallbacks=[CommandHandler('cancel', cancel)]
                                            )
     ask_conversation = ConversationHandler(entry_points=[CommandHandler("ask", ask_request)],
                                            states={
-                                               ASK_RESPONSE:[MessageHandler(Filters.text, ask_response)],
+                                               ASK_RESPONSE:[MessageHandler(Filters.text, ask_response), CommandHandler('cancel', cancel)],
                                            },
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )
     answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(pay_buttons)],
                                            states={
-                                               ANSWER_RESPONSE:[MessageHandler(Filters.text, answer_response)],
+                                               ANSWER_RESPONSE:[MessageHandler(Filters.text, answer_response), CommandHandler('cancel', cancel)],
                                            },
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )
     writeall_conversation = ConversationHandler(entry_points=[CommandHandler('writeall', writeall)],
                                                               states = {
-                                                                  WRITEALL_RESPONSE: [MessageHandler(Filters.text, writeall_response)]
+                                                                  WRITEALL_RESPONSE: [MessageHandler(Filters.text, writeall_response),CommandHandler('cancel', cancel)]
                                                               },
                                                 fallbacks = [CommandHandler('cancel', cancel)]
                                                 )
     edittext_conversation = ConversationHandler(
         entry_points= [CommandHandler('edittext', edittext)],
         states = {
-            EDITTEXT_LABEL_REQUEST:[MessageHandler(Filters.text, edittext_label_request)],
-            EDITTEXT_TEXT_REQUEST: [MessageHandler(Filters.text, edittext_text_request)]
+            EDITTEXT_LABEL_REQUEST:[MessageHandler(Filters.text, edittext_label_request),CommandHandler('cancel', cancel)],
+            EDITTEXT_TEXT_REQUEST: [MessageHandler(Filters.text, edittext_text_request),CommandHandler('cancel', cancel)]
         },
         fallbacks = [CommandHandler('cancel', cancel)]
     )
