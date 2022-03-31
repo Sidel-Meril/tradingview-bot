@@ -88,6 +88,7 @@ class ChromeDriver:
         password.send_keys(login_data['password'])
         log_in = self.driver.find_element(by = By.XPATH, value=".//span[@class='tv-button__loader']")
         log_in.click()
+        sleep(30)
         self.driver.implicitly_wait(10)
         return self.driver.get_cookies()
 

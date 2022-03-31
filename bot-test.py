@@ -369,6 +369,7 @@ def login(update, context, admin_id):
         _, username, password = update.message.text.split(' ')
         message = f"""
 Выполняю вход на сайт от имени <b>{username}</b>...
+Откройте <a href="https://www.tradingview.com/">TradingView</a>, где уже выполнен вход от имени <b>{username}</b> и подтвердите авторизацию.
                         """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
         value = json.dumps(selenium_get_screen.log_in(username, password))
