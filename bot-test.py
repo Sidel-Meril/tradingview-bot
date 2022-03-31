@@ -414,7 +414,7 @@ def edittext(update, context, admin_id):
     rows.append(last_row)
     reply_keyboard = rows
     markup_key = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-    updater.bot.send_message(admin_id, message_label_request, reply_keyboard = markup_key)
+    updater.bot.send_message(admin_id, message_label_request, reply_markup = markup_key)
     return EDITTEXT_LABEL_REQUEST
 
 @admin
