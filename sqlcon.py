@@ -84,7 +84,7 @@ class Database:
             """
         self.cur.execute(query)
         value = self.cur.fetchall()
-        return value[0]
+        return value[0][1]
 
     @_conn
     def add_settings(self, setting_name, value):
