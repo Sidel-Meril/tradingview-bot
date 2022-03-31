@@ -108,7 +108,7 @@ class ChromeDriver:
             sleep(0.1)
         "accept cookies"
         sleep(0.1)
-        print(self.driver.find_element(by=By.XPATH, value="////*[contains(text(), 'This website uses cookies')]").get_attribute('innerHTML'))
+        print(self.driver.find_element(by=By.XPATH, value="//*[contains(text(), 'This website uses cookies')]").get_attribute('innerHTML'))
         try:
             accept_window = self.driver.find_element(by=By.XPATH, value='//div[@class="main-content-2gM8G-uJ"]')
             accept_line = accept_window.find_element(by=By.XPATH, value='//div[@class="actions-2gM8G-uJ"]')
