@@ -106,9 +106,10 @@ class ChromeDriver:
                          'username': os.environ['TRADE_LOGIN'],
                          'password': os.environ['TRADE_PASSWORD']
                      }
+        sleep(5)
+
         source = 'https://www.tradingview.com/'
 
-        sleep(5)
 
         self.driver.get(login_url)
         self.driver.implicitly_wait(10)
