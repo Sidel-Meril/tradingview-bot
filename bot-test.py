@@ -634,7 +634,7 @@ if __name__=="__main__":
         entry_points= [CommandHandler('edittext', edittext)],
         states = {
             EDITTEXT_LABEL_REQUEST:[MessageHandler(Filters.text, edittext_label_request),CommandHandler('cancel', cancel)],
-            EDITTEXT_TEXT_REQUEST: [MessageHandler(Filters.text, edittext_text_request),CommandHandler('cancel', cancel)]
+            EDITTEXT_TEXT_REQUEST: [CommandHandler('cancel', cancel), MessageHandler(Filters.text, edittext_text_request)]
         },
         fallbacks = [CommandHandler('cancel', cancel)]
     )
