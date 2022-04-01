@@ -64,7 +64,7 @@ class ChromeDriver:
                 'Connection': 'keep-alive',
                 'DNT': '1'
             }
-            self.driver.set_window_size(3000, 800)
+            self.driver.set_window_size(2000, 800)
 
     @_start
     def log_in(self, username, password):
