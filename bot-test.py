@@ -142,18 +142,22 @@ def get_screenshot(update, context):
     user_id = update.message.chat.id
     db = sqlcon.Database(database_url=variables['database']['link'])
     data = db.get_cookies()
-    db.close()
+
     cookies = json.loads(data)
 
     try:
         pair, timeframe = update.message.text.split(' ')
         updater.bot.send_message(chat_id=user_id, text=f"Ищу <i>{pair}</i> <b>{timeframe}</b>", parse_mode='HTML')
-        screenshot = selenium_get_screen.get_screenshot(pair,timeframe,cookies)
+        pairs = db.get_pairs()
+        pair_index = [row[0] for row in pairs].index(pair)
+        pair_exchange = pairs[pair_index][1]
+        screenshot = selenium_get_screen.get_screenshot(f"{pair_exchange}:{pair}",timeframe,cookies)
         updater.dispatcher.bot.send_photo(chat_id=user_id, photo=screenshot)
+
     except Exception as e:
         print(e)
         updater.bot.send_message(chat_id=user_id, text="Ничего не найдено :( Введите название пары/таймфрейма правильно", parse_mode='HTML')
-
+    db.close()
     return ConversationHandler.END
 
 @common_user
@@ -394,7 +398,7 @@ def addpair(update, context, admin_id):
     try:
         _, exchange, symbol = update.message.text.split(' ')
         db = sqlcon.Database(database_url=variables['database']['link'])
-        db.add_pair(' ', symbol)
+        db.add_pair(exchange, symbol)
         db.close()
         message = """
 Пара <b>%s:%s</b> добавлена.
