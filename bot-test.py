@@ -186,7 +186,28 @@ def ask_response(update, message):
     updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение администратору. Ожидайте ответа.")
     return ConversationHandler.END
 
+def ask_response_with_photo(update, message):
+    user_id = update.message.chat.id
+    user_message = update.message.text
+    keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} 0')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    admin_ids = [row[0] for row in db.get_admins()]
+    db.close()
+    try:
+        file_id = update.message.photo[-1].file_id
+    except:
+        file_id = update.message.reply_to_message.photo[-1].file_id
 
+    for admin_id in admin_ids:
+        updater.bot.send_photo(admin_id, photo=file_id,caption="""<b>Сообщение от пользователя</b>
+    %s
+
+    <i>%s</i>    
+        """ % (get_info(user_id), user_message), parse_mode='HTML',
+                             reply_markup=reply_markup)
+    updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение администратору. Ожидайте ответа.")
+    return ConversationHandler.END
 
 @common_user
 def pay_request(update, context):
@@ -258,12 +279,35 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
 def answer_response(update, context, admin_id):
     global user_id_to_response
     answer = update.message.text
-    updater.bot.send_message(chat_id=user_id_to_response, text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
-                             parse_mode='HTML')
-    updater.bot.send_message(chat_id=admin_id, text=f"""Вы ответили пользователю <a href="tg://user?id={user_id_to_response}">id{user_id_to_response}</a>""",
-                             parse_mode='HTML')
+    try:
+        updater.bot.send_message(chat_id=user_id_to_response, text="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
+                                 parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=f"""Вы ответили пользователю <a href="tg://user?id={user_id_to_response}">id{user_id_to_response}</a>""",
+                                 parse_mode='HTML')
+    except:
+        pass
     user_id_to_response = None
     return ConversationHandler.END
+
+def answer_response_with_photo(update, context, admin_id):
+    global user_id_to_response
+    answer = update.message.text
+
+    try:
+        file_id = update.message.photo[-1].file_id
+    except:
+        file_id = update.message.reply_to_message.photo[-1].file_id
+
+    try:
+        updater.bot.send_photo(chat_id=user_id_to_response, photo=file_id, caption="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
+                                 parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=f"""Вы ответили пользователю <a href="tg://user?id={user_id_to_response}">id{user_id_to_response}</a>""",
+                                 parse_mode='HTML')
+    except:
+        pass
+    user_id_to_response = None
+    return ConversationHandler.END
+
 
 def accept(user_id):
     db = sqlcon.Database(database_url=variables['database']['link'])
@@ -614,13 +658,17 @@ if __name__=="__main__":
                                            )
     ask_conversation = ConversationHandler(entry_points=[CommandHandler("ask", ask_request)],
                                            states={
-                                               ASK_RESPONSE:[MessageHandler(Filters.text, ask_response), CommandHandler('cancel', cancel)],
+                                               ASK_RESPONSE:[CommandHandler('cancel', cancel),
+                                                             MessageHandler(Filters.photo, ask_response_with_photo),
+                                                             MessageHandler(Filters.text, ask_response)],
                                            },
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )
     answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(pay_buttons)],
                                            states={
-                                               ANSWER_RESPONSE:[MessageHandler(Filters.text, answer_response), CommandHandler('cancel', cancel)],
+                                               ANSWER_RESPONSE:[CommandHandler('cancel', cancel),
+                                                                MessageHandler(Filters.photo, answer_response_with_photo),
+                                                                MessageHandler(Filters.text, answer_response)],
                                            },
                                            fallbacks = [CommandHandler('cancel',cancel)]
                                            )
