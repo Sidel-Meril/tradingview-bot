@@ -188,7 +188,6 @@ def ask_response(update, message):
 
 def ask_response_with_photo(update, message):
     user_id = update.message.chat.id
-    user_message = update.message.text
     keyboard = [[InlineKeyboardButton('Ответить', callback_data=f'reply_to {user_id} 0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     db = sqlcon.Database(database_url=variables['database']['link'])
@@ -196,8 +195,11 @@ def ask_response_with_photo(update, message):
     db.close()
     try:
         file_id = update.message.photo[-1].file_id
+        user_message = update.message.caption
     except:
         file_id = update.message.reply_to_message.photo[-1].file_id
+        user_message = update.message.reply_to_message.caption
+
 
     for admin_id in admin_ids:
         updater.bot.send_photo(admin_id, photo=file_id,caption="""<b>Сообщение от пользователя</b>
@@ -289,14 +291,17 @@ def answer_response(update, context, admin_id):
     user_id_to_response = None
     return ConversationHandler.END
 
+@admin
 def answer_response_with_photo(update, context, admin_id):
     global user_id_to_response
-    answer = update.message.text
+
 
     try:
         file_id = update.message.photo[-1].file_id
+        answer = update.message.caption
     except:
         file_id = update.message.reply_to_message.photo[-1].file_id
+        answer = update.message.reply_to_message.caption
 
     try:
         updater.bot.send_photo(chat_id=user_id_to_response, photo=file_id, caption="<b>Ответ администратора на Ваше сообщение</b>\n"+answer,
