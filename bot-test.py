@@ -267,19 +267,17 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
     if 'accept' in query.data:
         _, user_id, __ = query.data.split(' ')
         accept(int(user_id))
+    elif 'decline_pay' in query.data:
+        _, user_id, __ = query.data.split(' ')
+        updater.bot.send_message(chat_id=admin_id, text="""Хорошо, воспользуйтесь /pay, когда передумаете. 
+    Если у Вас остались вопросы нажмите /ask, чтобы задать их администрации.""", parse_mode='HTML')
+        return ConversationHandler.END
     elif 'decline' in query.data:
         _, user_id, __ = query.data.split(' ')
         decline(int(user_id))
     elif 'pay' in query.data:
         _, user_id, __ = query.data.split(' ')
         return PAY_RESPONSE
-
-    elif 'decline_pay' in query.data:
-        _, user_id, __ = query.data.split(' ')
-        updater.bot.send_message(chat_id=admin_id, text="""Хорошо, воспользуйтесь /pay, когда передумаете. 
-    Если у Вас остались вопросы нажмите /ask, чтобы задать их администрации.""", parse_mode='HTML')
-        return ConversationHandler.END
-
     elif 'reply_to' in query.data:
         global user_id_to_response
         _, user_id_to_response, __ = query.data.split(' ')
