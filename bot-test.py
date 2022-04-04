@@ -219,7 +219,6 @@ def pay_request(update, context):
     users = [user[0] for user in data]
     user_plans = [user[1] for user in data]
     price, duration, payment_data = int(db.get_setting('price')), int(db.get_setting('term')), db.get_setting('payment')
-    db.close()
     if user_plans[users.index(user_id)] == 'paid':
         message = f"""Вы уже оформили подписку. Нажмите /help, чтобы узнать список доступных команд.
 Ваша подписка действительна до {date.fromtimestamp(data[users.index(user_id)][3]).isoformat()}
@@ -227,18 +226,18 @@ def pay_request(update, context):
         updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
         return ConversationHandler.END
 
-    message=f"""Стоимость подписки на <b>{duration} дней</b> составляет <b>{price} долларов</b>.
-    
-Реквизиты:
-<pre>{payment_data}</pre>
+    message=f"%s" %(db.get_setting('payment_message'))
+    db.close()
 
-Пришлите скриншот оплаты (квитанцию) боту в чат, и он активирует Вам доступ.
-    """
-    updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
+    keyboard = [[InlineKeyboardButton('Оплатить', callback_data=f'pay {user_id} 0'), InlineKeyboardButton('Я пока еще подумаю...', callback_data=f'decline_pay {user_id} 0')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML', reply_keyboard = reply_markup)
     return PAY_RESPONSE
 
 def pay_response(update, context):
     user_id = update.message.chat.id
+    updater.bot.send_message(user_id, "Пришлите скриншот оплаты (квитанцию) боту в чат, и он активирует Вам доступ.")
     keyboard = [[InlineKeyboardButton('Принять', callback_data=f'accept {user_id} 0'),
                  InlineKeyboardButton('Отклонить',callback_data=f'decline {user_id} 0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -271,6 +270,16 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
     elif 'decline' in query.data:
         _, user_id, __ = query.data.split(' ')
         decline(int(user_id))
+    elif 'pay' in query.data:
+        _, user_id, __ = query.data.split(' ')
+        return PAY_RESPONSE
+
+    elif 'decline_pay' in query.data:
+        _, user_id, __ = query.data.split(' ')
+        updater.bot.send_message(chat_id=admin_id, text="""Хорошо, воспользуйтесь /pay, когда передумаете. 
+    Если у Вас остались вопросы нажмите /ask, чтобы задать их администрации.""", parse_mode='HTML')
+        return ConversationHandler.END
+
     elif 'reply_to' in query.data:
         global user_id_to_response
         _, user_id_to_response, __ = query.data.split(' ')
@@ -350,6 +359,8 @@ def admin_help(update, context, admin_id):
 /adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
 /whois - узнать id_пользователя
 /login - залогиниться
+/addadmin - добавить администратора
+/deleteadmin - удалить администратора
     """
 
     updater.bot.send_message(chat_id=admin_id, text=help_message)
@@ -444,11 +455,10 @@ def login(update, context, admin_id):
 
 @admin
 def addpair(update, context, admin_id):
+    db = sqlcon.Database(database_url=variables['database']['link'])
     try:
         _, exchange, symbol = update.message.text.split(' ')
-        db = sqlcon.Database(database_url=variables['database']['link'])
         db.add_pair(exchange, symbol)
-        db.close()
         message = """
 Пара <b>%s:%s</b> добавлена.
                 """ % (exchange, symbol)
@@ -459,6 +469,8 @@ def addpair(update, context, admin_id):
 <pre>/addpair exchange symbol</pre>
                 """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+    finally:
+        db.close()
 
 
 def get_info(user_id):
@@ -629,6 +641,44 @@ def adddays(update, context, admin_id):
                 """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
+@admin
+def addadmin(update, _, admin_id):
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    try:
+        _, user_id = update.message.text.split(' ')
+        db.add_admin(user_id)
+        message = """
+Пользователь <a href="tg://user?id=%i">id%i</a> получил права администратора.
+                    """ % (user_id, user_id)
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+    except:
+        message = """
+Введите запрос в формате:
+<pre>/addadmin user_id</pre>
+                    """
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+    finally:
+        db.close()
+
+
+@admin
+def deleteadmin(update, _, admin_id):
+    db = sqlcon.Database(database_url=variables['database']['link'])
+    try:
+        _, user_id = update.message.text.split(' ')
+        db.del_admin(user_id)
+        message = """
+Пользователь <a href="tg://user?id=%i">id%i</a> лишен прав администратора.
+                        """ %(user_id, user_id)
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+    except:
+        message = """
+Введите запрос в формате:
+<pre>/deleteadmin user_id</pre>
+                        """
+        updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
+    finally:
+        db.close()
 
 
 if __name__=="__main__":
@@ -639,10 +689,10 @@ if __name__=="__main__":
 
 #user commands
     """
-/listpairs - список торговых пар
-/pay - оплатить подписку
-/request - запросить скриншот
-/ask - задать вопрос
+    /listpairs - список торговых пар
+    /pay - оплатить подписку
+    /request - запросить скриншот
+    /ask - задать вопрос
     """
     dp.add_handler(CommandHandler("help", user_help))
     dp.add_handler(CommandHandler("listpairs", listpairs))
@@ -710,6 +760,8 @@ if __name__=="__main__":
     dp.add_handler(CommandHandler("adddays", adddays))
     dp.add_handler(CommandHandler("whois", whois))
     dp.add_handler(CommandHandler("login", login))
+    dp.add_handler(CommandHandler("addadmin", addadmin))
+    dp.add_handler(CommandHandler("deleteadmin", deleteadmin))
 
     """
     /paid - список оплативших - показывает когда и кто оплачивал и (в скобках желательно писать сколько кому осталось)
@@ -720,6 +772,8 @@ if __name__=="__main__":
     /adddays - добавить дни клиенту - возможность по логину, имени, id-юзера добавить некое количество дней, к примеру в подарок или как компенсация.
     /whois - узнать id_пользователя
     /login - залогиниться
+    /addadmin - добавить администратора
+    /deleteadmin - удалить администратора
     
     """
 

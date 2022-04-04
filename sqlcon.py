@@ -223,6 +223,28 @@ class Database:
 
         return result
 
+    @_conn
+    def add_admin(self, admin):
+
+        query = """INSERT INTO admins(admin_id) VALUES ('%i')
+        """ % (admin)
+
+        self.cur.execute(query)
+        result = self.cur.fetchall()
+
+        return result
+
+    @_conn
+    def del_admin(self, admin):
+
+        query="""DELETE FROM admins WHERE admin_id = '%s';
+        """ %admin
+
+        self.cur.execute(query)
+        result = self.cur.fetchall()
+
+        return result
+
     def close(self):
             self.conn.close()
 
