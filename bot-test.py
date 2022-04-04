@@ -269,8 +269,9 @@ def pay_buttons(update: Update, context: CallbackContext) -> None:
         accept(int(user_id))
     elif 'decline_pay' in query.data:
         _, user_id, __ = query.data.split(' ')
-        updater.bot.send_message(chat_id=admin_id, text="""Хорошо, воспользуйтесь /pay, когда передумаете. 
-    Если у Вас остались вопросы нажмите /ask, чтобы задать их администрации.""", parse_mode='HTML')
+        updater.bot.send_message(chat_id=admin_id, text=
+"""Хорошо, воспользуйтесь /pay, когда передумаете. 
+Если у Вас остались вопросы нажмите /ask, чтобы задать их администрации.""", parse_mode='HTML')
         return ConversationHandler.END
     elif 'decline' in query.data:
         _, user_id, __ = query.data.split(' ')
@@ -705,7 +706,7 @@ if __name__=="__main__":
 
     pay_conversation = ConversationHandler(entry_points=[CommandHandler("pay", pay_request)],
                                            states={
-                                               PAY_RESPONSE:[MessageHandler(Filters.photo, pay_response), CommandHandler('cancel', cancel)]
+                                               PAY_RESPONSE:[CommandHandler('cancel', cancel),CallbackQueryHandler(pay_buttons), MessageHandler(Filters.photo, pay_response)]
                                            },
                                            fallbacks=[CommandHandler('cancel', cancel)]
                                            )
