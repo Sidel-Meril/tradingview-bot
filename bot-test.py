@@ -131,7 +131,8 @@ def listpairs(update, context):
 
 def req(update, context):
     user_id = update.message.chat.id
-    message = """Введите правильно название пары и таймфрейм.
+    message = """
+Введите правильно название пары и таймфрейм.
     """
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
     return GET_SCREENSHOT
@@ -178,9 +179,9 @@ def ask_response(update, message):
     db.close()
     for admin_id in admin_ids:
         updater.bot.send_message(admin_id, text="""<b>Сообщение от пользователя</b>
-    %s
+%s
 
-    <i>%s</i>    
+<i>%s</i>    
         """ % (get_info(user_id), user_message), parse_mode='HTML',
                              reply_markup=reply_markup)
     updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение администратору. Ожидайте ответа.")
@@ -203,9 +204,9 @@ def ask_response_with_photo(update, message):
 
     for admin_id in admin_ids:
         updater.bot.send_photo(admin_id, photo=file_id,caption="""<b>Сообщение от пользователя</b>
-    %s
+%s
 
-    <i>%s</i>    
+<i>%s</i>    
         """ % (get_info(user_id), user_message), parse_mode='HTML',
                              reply_markup=reply_markup)
     updater.bot.send_message(user_id, "Вопрос отправлен на рассмотрение администратору. Ожидайте ответа.")
@@ -540,8 +541,8 @@ def edittext_text_request(update, context, admin_id):
     db.close()
 
     message = f"""
-    <b>Новое значение настройки {setting_label_to_edit}:</b>
-    <pre>{value}</pre>
+<b>Новое значение настройки {setting_label_to_edit}:</b>
+<pre>{value}</pre>
         """
     updater.bot.send_message(admin_id, message, parse_mode = 'HTML')
 
@@ -577,47 +578,6 @@ def deletepair(update, context, admin_id):
                 """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
-# @admin
-# def chngprice(update, context, admin_id):
-#     try:
-#         _, price = update.message.text.split(' ')
-#         price = int(price)
-#         db = sqlcon.Database(database_url=variables['database']['link'])
-#         db.change_settings('price',str(price))
-#         db.close()
-#         message = """
-# Цена подписки теперь <b>%i долларов</b>.
-#                 """ % (price)
-#         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-#     except Exception as e:
-#         print(e)
-#         message = """
-# Введите запрос в формате:
-# <pre>/chngprice цена(только число)</pre>
-#                 """
-#         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-#
-# @admin
-# def chngpayment(update, context, admin_id):
-#     try:
-#         payment = update.message.text.replace('/chngpayment','')
-#         db = sqlcon.Database(database_url=variables['database']['link'])
-#         db.change_settings('payment', payment)
-#         db.close()
-#         message = """
-#     Реквизиты для оплаты обновлены:
-#      <pre>%s/pre>.
-#                 """ % (payment)
-#         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-#     except Exception as e:
-#         print(e)
-#         message = """
-#             Введите запрос в формате:
-#             <pre>/chngpayment реквизиты</pre>
-#                 """
-#         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
-#
-
 @admin
 def adddays(update, context, admin_id):
     try:
@@ -630,13 +590,13 @@ def adddays(update, context, admin_id):
         db.edit_user_end_by_id(user_id, data[user_index][3] + _days)
         db.close()
         message = """
-    Подписка пользователя <a href="tg://user?id=%i">id%i</a> изменена на %i дней
+Подписка пользователя <a href="tg://user?id=%i">id%i</a> изменена на %i дней
                 """ % (user_id, user_id, days)
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
     except:
         message = """
-            Введите запрос в формате:
-            <pre>/adddays id_пользователя(только число) количество_дней</pre>
+Введите запрос в формате:
+<pre>/adddays id_пользователя(только число) количество_дней</pre>
                 """
         updater.bot.send_message(chat_id=admin_id, text=message, parse_mode='HTML')
 
