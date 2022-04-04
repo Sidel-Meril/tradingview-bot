@@ -226,7 +226,7 @@ def pay_request(update, context):
         updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML')
         return ConversationHandler.END
 
-    message=f"%s" %(db.get_setting('payment_message'))
+    message=db.get_setting('payment_message').format(price=price, duration=duration, payment_data=payment_data)
     db.close()
 
     keyboard = [[InlineKeyboardButton('Оплатить', callback_data=f'pay {user_id} 0'), InlineKeyboardButton('Я пока еще подумаю...', callback_data=f'decline_pay {user_id} 0')]]
