@@ -232,7 +232,7 @@ def pay_request(update, context):
     keyboard = [[InlineKeyboardButton('Оплатить', callback_data=f'pay {user_id} 0'), InlineKeyboardButton('Я пока еще подумаю...', callback_data=f'decline_pay {user_id} 0')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML', reply_keyboard = reply_markup)
+    updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML', reply_markup = reply_markup)
     return PAY_RESPONSE
 
 def pay_response(update, context):
