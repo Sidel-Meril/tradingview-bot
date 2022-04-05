@@ -234,7 +234,6 @@ def pay_request(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     updater.bot.send_message(chat_id=user_id, text=message, parse_mode='HTML', reply_markup = reply_markup)
-    return PAY_RESPONSE
 
 def pay_response(update, context):
     user_id = update.message.chat.id
@@ -664,9 +663,9 @@ if __name__=="__main__":
         fallbacks=[CommandHandler('cancel', cancel)]
     )
 
-    pay_conversation = ConversationHandler(entry_points=[CommandHandler("pay", pay_request)],
+    pay_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(pay_buttons)],
                                            states={
-                                               PAY_RESPONSE:[CommandHandler('cancel', cancel),CallbackQueryHandler(pay_buttons), MessageHandler(Filters.photo, pay_response)]
+                                               PAY_RESPONSE:[CommandHandler('cancel', cancel), MessageHandler(Filters.photo, pay_response)]
                                            },
                                            fallbacks=[CommandHandler('cancel', cancel)]
                                            )
