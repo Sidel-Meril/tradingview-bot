@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-import os
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKeyboardMarkup
 from telegram.ext import Updater, MessageHandler, ConversationHandler, CommandHandler, CallbackQueryHandler, \
     CallbackContext
@@ -741,6 +740,8 @@ if __name__=="__main__":
                           port=PORT,
                           url_path=variables['telegram']['token'],
                         webhook_url = 'https://murmuring-inlet-95645.herokuapp.com/' + variables['telegram']['token'])
+
+
     updater.idle()
 
 

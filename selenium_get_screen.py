@@ -1,14 +1,6 @@
 import json
-from PIL import Image
-from io import StringIO, BytesIO
-import base64
 from selenium import webdriver
-# from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import pickle
 import random
 from time import sleep, time
 import os
@@ -23,7 +15,7 @@ class ChromeDriver:
             self._create_driver()
             result = func(self,*args, **kwargs)
             try:
-                # self.driver.close
+                self.driver.close
                 pass
             except:
                 pass
@@ -37,23 +29,23 @@ class ChromeDriver:
             return False
         return True
 
-    def __init__(self, path, cookies_path, headless=True):
+    def __init__(self, path, binary):
         "Initial param. for creating Chrome driver"
 
-        self.user_agents = open(r'user-agents.txt','r').read().split('\n')
+        self.user_agents = open(r'interfaces/tradingview/user-agents.txt', 'r').read().split('\n')
         self.executable_path = path
-        self.headless = headless
-        with open(r'data-ranges.json', 'r') as f:
+        self.binary_location = binary
+        with open(r'interfaces/tradingview/data-ranges.json', 'r') as f:
             self.ranges = json.load(f)
 
     def _create_driver(self):
         if not getattr(self, 'driver', None):
             chrome_options = webdriver.ChromeOptions()
-            chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
+            chrome_options.binary_location = self.binary_location
             chrome_options.add_argument("--headless")
             chrome_options.add_argument("--disable-dev-shm-usage")
             chrome_options.add_argument("--no-sandbox")
-            self.driver = webdriver.Chrome(executable_path=os.environ.get("CHROMEDRIVER_PATH"),
+            self.driver = webdriver.Chrome(executable_path=self.executable_path,
                                       chrome_options=chrome_options)
 
             self.driver.header_overrides = {
@@ -109,10 +101,8 @@ class ChromeDriver:
 
         sleep(0.1)
 
-        # while self._check_exists(By.XPATH, "////*[contains(text(), 'This website uses cookies')]"):
-        #     sleep(0.1)
         "accept cookies"
-        # print(self.driver.page_source)
+
         try:
             accept_window = self.driver.find_element(by=By.XPATH, value='//div[@class="main-content-x9aer5B8"]')
             accept_line = accept_window.find_element(by=By.XPATH, value='//div[@class="actions-x9aer5B8"]')
@@ -127,16 +117,11 @@ class ChromeDriver:
 
         sleep(2)
 
-        # bio = BytesIO()
-        # im = BytesIO()
-        # bio.name = 'image.png'
-        # im.save(bio, 'PNG')
         print('screen saved.')
         return chat_window.screenshot_as_png
 
 def get_screenshot(symbol, interval, cookies):
-    examp = ChromeDriver(os.environ.get('CHROMEDRIVER_PATH'), 'cookie.dump', True)
-    # examp = ChromeDriver('chromedriver.exe', 'cookie.dump', True)
+    examp = ChromeDriver(os.environ.get('CHROMEDRIVER_PATH'), os.environ.get("GOOGLE_CHROME_BIN"))
     if next((False for item in examp.ranges.values() if interval in list(item.values())), True):
         return False
     link = 'https://www.tradingview.com/chart/?symbol={SYMBOL}&interval={interval}'.format(SYMBOL=symbol, interval=interval)
@@ -144,10 +129,6 @@ def get_screenshot(symbol, interval, cookies):
     return image
 
 def log_in(username, password):
-    examp = ChromeDriver('chromedriver.exe', 'cookie.dump', True)
+    examp = ChromeDriver(os.environ.get('CHROMEDRIVER_PATH'), os.environ.get("GOOGLE_CHROME_BIN"))
     data = examp.log_in(username, password)
     return data
-if __name__ == "__main__":
-    start = time()
-    get_screenshot('BLZUSDT',"1")
-    print(time()-start)

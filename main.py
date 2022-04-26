@@ -1,16 +1,12 @@
-# This is a sample Python script.
+from general import Commander
+import user
+import admin
+import conf
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    config = conf.LocalConfig()
+    bot = Commander(config.TOKEN, config.WORKERS, config.CONVERSATION_POINTS)
+    admin_commands = admin.Admin(bot.Updater, config.DATABASE_URL, bot.conversations)
+    user_commands = user.User(bot.Updater, config.DATABASE_URL, bot.conversations)
+    bot.add_commands(admin_commands,user_commands)
+    bot.start()

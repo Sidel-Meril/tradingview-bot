@@ -1,4 +1,9 @@
 import psycopg2
+from  psycopg2 import errors
+import messages
+from conf.config import LocalConfig
+
+conf = LocalConfig()
 
 class Database:
     def __init__(self, database_url):
@@ -177,6 +182,14 @@ class Database:
         """ %symbol
 
         self.cur.execute(query)
+        self.conn.commit()\
+
+    @_conn
+    def del_setting(self, setting_name):
+        query="""DELETE FROM bot_settings WHERE setting_name = '%s';
+        """ %setting_name
+
+        self.cur.execute(query)
         self.conn.commit()
 
     @_conn
@@ -249,4 +262,11 @@ class Database:
             self.conn.close()
 
 if __name__ == "__main__":
-    pass
+    db = Database(conf.DATABASE_URL)
+    res = db.get_settings()
+    print(res)
+    db.close()
+
+    print('Result:')
+    for title, message in res:
+        print(title, '\n', message)
