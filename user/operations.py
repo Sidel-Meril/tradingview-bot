@@ -157,7 +157,8 @@ class User:
 
         try:
             pair, timeframe = update.message.text.split(' ')
-            print(self.Text.REQUEST_RECEIVED.format(data=f"{pair} {timeframe}"))
+            print(type(self.Text.REQUEST_RECEIVED.format(data=f"{pair} {timeframe}")))
+            print(type(user_id))
             self.msg.send_message(user_id, self.Text.REQUEST_RECEIVED.format(data=f"{pair} {timeframe}"))
             if timeframe not in AdminText.RANGES:
                 self.msg.send_message(user_id, AdminText.TIMEFRAME)
