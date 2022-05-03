@@ -64,7 +64,7 @@ class Commander:
                                                },
                                                fallbacks=[CommandHandler('cancel', self.User.cancel)]
                                                )
-        self.answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(self.buttons), CommandHandler("answer", self.Admin.adddays, filters=self.admin_filter)],
+        self.answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(self.buttons), CommandHandler("answer", self.Admin.answer, filters=self.admin_filter)],
                                                   states={
                                                       self.conversations['ANSWER_RESPONSE']: [
                                                           CommandHandler('cancel', self.User.cancel),
@@ -121,6 +121,7 @@ class Commander:
         self.dp.add_handler(CommandHandler("login", self.Admin.login, filters=self.admin_filter))
         self.dp.add_handler(CommandHandler("addadmin", self.Admin.addadmin, filters=self.admin_filter))
         self.dp.add_handler(CommandHandler("deladmin", self.Admin.deladmin, filters=self.admin_filter))
+        self.dp.add_handler(CommandHandler("whois", self.Admin.whois, filters=self.admin_filter))
 
     def start(self):
         self._init_handlers()

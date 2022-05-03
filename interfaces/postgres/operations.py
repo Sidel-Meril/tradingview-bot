@@ -214,9 +214,7 @@ class Database:
         """ % (admin)
 
         self.cur.execute(query)
-        result = self.cur.fetchall()
-
-        return result
+        self.conn.commit()
 
     @_conn
     def del_admin(self, admin):
@@ -225,9 +223,8 @@ class Database:
         """ %admin
 
         self.cur.execute(query)
-        result = self.cur.fetchall()
+        self.conn.commit()
 
-        return result
 
     def close(self):
             self.conn.close()

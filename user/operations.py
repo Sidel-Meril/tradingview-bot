@@ -1,3 +1,5 @@
+import random
+
 import interfaces.postgres as pg
 import interfaces.tradingview
 from interfaces.localtelegram import operations as tg
@@ -18,6 +20,7 @@ class User:
         self.ldb = None
         self.admins = None
         self.pairs = None
+
     def _open_db(func):
         def wrapper(self,update, _, *args, **kwargs):
             admin_id = update.message.chat.id
@@ -63,6 +66,11 @@ class User:
     @_get_user
     def help(self, update, _, user_data):
         user_id = update.message.chat.id
+        help_text = self.Text.HELP(user_data[1])
+        if '{start}' in help_text:
+            help_text = help_text.format(
+                start = date.fromtimestamp(user_data[2]).isoformat(),
+                end = date.fromtimestamp(user_data[3]).isoformat())
         self.msg.send_message(user_id, self.Text.HELP(user_data[1]))
 
     @_get_user
@@ -101,10 +109,10 @@ class User:
         reply_markup = self.board.inline_keyboard_button(keyboard)
         try:
             for admin_id in self.admins:
-                self.msg.send_photo(admin_id, update.message.photo[-1].file_id,
-                                   AdminText.PAY_RECEIVED.format(user_id=user_id), markup=reply_markup)
+                self.updater.bot.send_photo(admin_id, photo=update.message.photo[-1].file_id, caption =
+                                   AdminText.PAY_RECEIVED.format(user_id=user_id), reply_markup=reply_markup, parse_mode='html')
                 print(f'Screenshot send to {admin_id}')
-            self.msg.send_message(user_id, self.Text.PAY_RECEIVED)
+            self.updater.bot.send_message(user_id, self.Text.PAY_RECEIVED, parse_mode='html')
         except Exception as e:
             print(e)
             self.msg.send_message(user_id, self.Text.ERROR)
@@ -114,11 +122,10 @@ class User:
         user_id = update.message.chat.id
         try:
             self.msg.send_message(user_id, self.Text.TEXT_NOT_ALLOWED)
-            self.msg.send_message(user_id, self.Text.REQUEST)
         except Exception as e:
             print(e)
             self.msg.send_message(user_id, self.Text.ERROR)
-        return self.conversations['PAY_RESPONSE']
+        return self.conversations['END']
 
     def pay_declined(self, user_id):
         self.msg.send_message(user_id, self.Text.PAY_POSTPONED)
@@ -141,10 +148,6 @@ class User:
             self.msg.send_message(update.message.chat.id, self.Text.REQUEST)
             return self.conversations['GET_SCREENSHOT']
 
-    def tets(self, update, _):
-        user_id = update.message.chat.id
-        self.msg.send_message(user_id, user_id)
-
     def request_response(self, update, _):
         user_id = update.message.chat.id
         self.ldb = pg.Database(self.db)
@@ -155,8 +158,15 @@ class User:
         try:
             pair, timeframe = update.message.text.split(' ')
             self.msg.send_message(user_id, self.Text.REQUEST_RECEIVED.format(data=f"{pair} {timeframe}"))
-            pair_index = [row[0] for row in self.pairs].index(pair)
-            pair_exchange = self.pairs[pair_index][1]
+            if timeframe not in AdminText.RANGES:
+                self.msg.send_message(user_id, AdminText.TIMEFRAME)
+                return self.conversations['END']
+            try:
+                pair_index = [row[0] for row in self.pairs].index(pair)
+                pair_exchange = self.pairs[pair_index][1]
+            except:
+                self.msg.send_message(user_id, AdminText.SYMBOL)
+                return self.conversations['END']
             screenshot = tradingview.get_screenshot(f"{pair_exchange}:{pair}", timeframe, cookies)
             self.msg.send_photo(user_id, screenshot)
 
@@ -168,8 +178,13 @@ class User:
 
     def listpairs(self, update, _):
         user_id = update.message.chat.id
-        message_rows = [f"""<pre>{exchange}:{symbol}</pre>""" for symbol, exchange in self.pairs]
-        self.msg.send_message(user_id, self.Text.LISTPAIRS_TITLE.format(pairs_list='\n'.join(message_rows)))
+        self.ldb = pg.Database(self.db)
+        self.pairs = self.ldb.get_pairs()
+        message_rows = [f"""{exchange}:<code>{symbol}</code>""" for symbol, exchange in self.pairs]
+        self.ldb.close()
+        self.msg.send_message(user_id, self.Text.LISTPAIRS_TITLE.format(pairslist='\n'.join(message_rows),
+                                                                        symbol = random.choice(self.pairs[1]),
+                                                                        timeframe = random.choice(AdminText.RANGES)))
 
     @_get_user
     def ask_request(self, update, _, user_data):

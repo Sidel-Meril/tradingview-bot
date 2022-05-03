@@ -1,3 +1,5 @@
+import random
+
 import interfaces.postgres as pg
 from interfaces.localtelegram import operations as tg
 from messages import UserMessages as Text
@@ -35,10 +37,13 @@ class Admin:
             try:
                 data = func(self,update, _,*args, **kwargs)
                 self.msg.send_message(admin_id,AdminText.ADMIN_SUCCESS.format(command = func.__name__, data=' '.join(data)))
-            except:
+            except Exception as e:
+                print(e)
+                examp = AdminText.EXAMPLES[func.__name__]
+                if '{user_id}' in examp: examp = examp.format(user_id = random.choice(self.admins))
                 self.msg.send_message(admin_id,
                                       AdminText.INLINE_COMMAND.format(command = func.__name__,
-                                                                      example = AdminText.EXAMPLES[func.__name__]))
+                                                                      example = examp))
             finally:
                 self.ldb.close()
 
@@ -60,13 +65,28 @@ class Admin:
 
     def help(self, update, _):
         user_id = update.message.chat.id
-        self.msg.send_message(user_id, AdminText.HELP)
+        self.msg.send_message(user_id, AdminText.HELP.format(user_id=user_id))
+
+    @simple_request
+    def whois(self, update, _, example = ''):
+        admin_id = update.message.chat.id
+        user_id = update.message.reply_to_message.forward_from.id
+        info = self.ldb.get_users_id()
+        if user_id in self.admins:
+            type_user = 'администратор'
+        elif user_id in info:
+            type_user = 'пользователь зарегистрирован ботом'
+        else:
+            type_user = 'пользователь не использовал бота'
+        self.msg.send_message(admin_id, f"id <code>{user_id}</code> ({type_user})")
+        return " ", " "
 
     @simple_request
     def delpair(self,  update, _, example='OANDA USDJPY'):
-        _, exchange, symbol = update.message.text.split(' ')
+        _, symbol = update.message.text.split(' ')
         self.ldb.del_pair(symbol)
-        return exchange, symbol
+
+        return ' ', symbol
 
     @simple_request
     def deladmin(self, update, _):
@@ -77,8 +97,8 @@ class Admin:
     @simple_request
     def addadmin(self, update, _):
         _, user_id = update.message.text.split(' ')
-        self.ldb.add_admin(user_id)
-        return (user_id)
+        self.ldb.add_admin(int(user_id))
+        return str(user_id), ' '
 
     @simple_request
     def addpair(self, update, _):
@@ -89,14 +109,17 @@ class Admin:
     @simple_request
     def adddays(self, update, _):
         _, user_id, days = update.message.text.split(' ')
-        self.ldb.add_admin(user_id)
-        return user_id
+        _days = int(days) * 86280
+        data = self.ldb.get_users()
+        user_index = [row[0] for row in data].index(int(user_id))
+        self.ldb.edit_user_end_by_id(int(user_id), data[user_index][3] + _days)
+        return user_id, days
 
     @simple_request
     def deladmin(self, update, _):
         _, user_id = update.message.text.split(' ')
-        self.ldb.del_admin(user_id)
-        return user_id
+        self.ldb.del_admin(int(user_id))
+        return str(user_id), ' '
 
     def edittext(self, update, _):
         admin_id = update.message.chat.id
@@ -140,7 +163,7 @@ class Admin:
         data = self.ldb.get_users()
         paid_users = list(filter(lambda x: x != None, [row if row[1] == 'paid' else None for row in data]))
         message_rows = ["""
-<a href="tg://user?id=%i">id%i</a>:
+<a href="tg://user?id=%i">пользователь</a> <code>%i</code>:
 <b>%s / %s</b>
 <b>Oсталось</b>: %i %s
 
@@ -155,6 +178,8 @@ class Admin:
 <b>Статистика использования бота</b>
 <b>Всего пользователей:</b> {len(data)}
 <b>Платных подписок:</b> {len(paid_users)}
+
+<b>Нажмите на id пользователя, чтобы скопировать его.</b>
 
 Пользователи, у которых оформлена подписка:
 
@@ -181,9 +206,10 @@ class Admin:
                 self.msg.send_message(user_id[0], res_text)
                 self.msg.send_message(admin_id,
                                          AdminText.MESSAGE_DELIVERED.format(user_id = user_id[0]))
-            except:
+            except Exception as e:
+                print(e)
                 self.msg.send_message(admin_id,
-                                         AdminText.MESSAGE_DELIVERY_ERROR.format(user_id=user_id))
+                                         AdminText.MESSAGE_DELIVERY_ERROR.format(user_id=user_id[0], error = e))
             finally:
                 self.msg.send_message(admin_id, AdminText.ADMIN_SUCCESS.format(command = 'writeall', data=''))
         return self.conversations['END']
@@ -221,14 +247,22 @@ class Admin:
         self.msg.send_message(update.message.chat.id, AdminText.LOGIN_SUCCESS)
 
     def answer_request(self, user_id):
-        self.msg.send_message(user_id, AdminText.ANSWER_REQUEST)
+        self.msg.send_message(user_id, AdminText.ANSWER_REQUEST.format(user_id=self.user_id_to_response))
 
-    @simple_request
-    def answer_request_by_id(self, update, _, example = ' '):
-        admin_id = update.message.chat.id
-        _, user_id = update.message.text.split(' ')
-        self.user_id_to_response = user_id
-        self.msg.send_message(admin_id, AdminText.ANSWER_REQUEST)
+    def answer(self, update, _):
+        primary_admin_id = update.message.chat.id
+        try:
+            _, user_id = update.message.text.split(' ')
+            self.user_id_to_response = user_id
+            for admin_id in self.admins:
+                self.msg.send_message(admin_id, AdminText.ANSWER_REQUEST.format(user_id=self.user_id_to_response))
+        except:
+            self.msg.send_message(primary_admin_id,
+                                  AdminText.INLINE_COMMAND.format(command='answer',
+                                                                  example=
+                                                                  AdminText.EXAMPLES['answer'].
+                                                                  format(user_id = random.choice(self.admins))))
+        return self.conversations['ANSWER_RESPONSE']
 
     def answer_response(self, update, _):
         admin_id = update.message.chat.id

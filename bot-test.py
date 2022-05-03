@@ -24,7 +24,7 @@ variables = {
 }
 
 #Init bot
-updater = Updater(variables['telegram']['token'], workers=10, use_context=True)
+updater = Updater(variables['telegram']['token'], workers=30, use_context=True)
 PORT = int(os.environ.get('PORT', '8443'))
 
 #Conversations
