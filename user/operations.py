@@ -158,7 +158,7 @@ class User:
         try:
             pair, timeframe = update.message.text.split(' ')
             _text = self.Text.REQUEST_RECEIVED.format(data=f"%s %s" %(pair, timeframe))
-            self.msg.send_message(str(user_id), _text)
+            self.updater.bot.send_message(user_id, _text, parse_mode='HTML')
             if timeframe not in AdminText.RANGES:
                 self.msg.send_message(user_id, AdminText.TIMEFRAME)
                 return self.conversations['END']
