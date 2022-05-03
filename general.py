@@ -123,9 +123,18 @@ class Commander:
         self.dp.add_handler(CommandHandler("deladmin", self.Admin.deladmin, filters=self.admin_filter))
         self.dp.add_handler(CommandHandler("whois", self.Admin.whois, filters=self.admin_filter))
 
-    def start(self):
+    def start_polling(self):
         self._init_handlers()
         self.Updater.start_polling(10)
+        self.Updater.idle()
+
+    def start_webhook(self, port, token, url):
+        self._init_handlers()
+        self.Updater.start_webhook(listen="0.0.0.0",
+                              port=port,
+                              url_path=token,
+                              webhook_url= url)
+
         self.Updater.idle()
 
 

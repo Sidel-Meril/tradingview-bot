@@ -2,9 +2,8 @@ import os
 
 class LocalConfig:
     PORT = int(os.environ.get('PORT', '8443'))
-    DATABASE_URL = ''
     TOKEN = os.environ['TELEGRAM_TOKEN']
-    HEROKU_PROJECT_LINK = ''
+    HEROKU_PROJECT_LINK = 'https://murmuring-inlet-95645.herokuapp.com/'+TOKEN
     CHROMEDRIVER_PATH = os.environ.get('CHROMEDRIVER_PATH'),
     GOOGLE_CHROME_BIN = os.environ.get("GOOGLE_CHROME_BIN")
     DATABASE_URL = os.environ['DATABASE_URL']
