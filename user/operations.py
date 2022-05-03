@@ -67,11 +67,11 @@ class User:
     def help(self, update, _, user_data):
         user_id = update.message.chat.id
         help_text = self.Text.HELP(user_data[1])
-        if user_data[1]=='paid':
-            help_text = help_text+'\nВаша подписка доступна с {start} по {end}'.format(
+        if '{start}' in help_text:
+            help_text = help_text.format(
                 start = date.fromtimestamp(user_data[2]).isoformat(),
                 end = date.fromtimestamp(user_data[3]).isoformat())
-        self.msg.send_message(user_id, self.Text.HELP(user_data[1]))
+        self.msg.send_message(user_id, help_text)
 
     @_get_user
     def pay(self, update, _, user_data):

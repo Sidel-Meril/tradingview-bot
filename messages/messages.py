@@ -18,7 +18,7 @@ class UserMessages:
     def __init__(self):
         DB = Database(LocalConfig.DATABASE_URL)
 
-        self.USER__PAID = DB.get_setting('USER__PAID')
+        self.USER__PAID = DB.get_setting('USER__PAID')+'\n\nВаша подписка доступна с <b>{start}</b> по <b>{end}</b>'
         self.USER__UNPAID = DB.get_setting('USER__UNPAID')
 
         self.STOP_MESSAGE = DB.get_setting('STOP_MESSAGE') #'STOPED'
