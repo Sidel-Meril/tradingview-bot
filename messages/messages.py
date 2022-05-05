@@ -129,8 +129,12 @@ class AdminMessages:
     PAY_BUTTONS = {'Принять оплату': 'ADMINPAYACCEPT {user_id}', 'Отклонить оплату': 'ADMINPAYDECLINE {user_id}'}
     INLINE_COMMAND = 'Неправильное использование. Пример: <code>/{command} {example}</code>'
     SCREENSHOT_CAPTION = """Скриншот оплаты от <a href="tg://user?id={user_id}">пользователя</a> <code>{user_id}</code>
-<code>/accept {user_id}</code>
-<code>/decline {user_id}</code>"""
+
+<b>Операции с оплатой</b>
+<code>/accept {user_id}</code> - принять.
+<code>/decline {user_id}</code> - отклонить.
+<code>/answer {user_id}</code> - прокомментировать.
+"""
     ANSWER_REQUEST = 'Введите Ваше сообщение <a href="tg://user?id={user_id}">пользователю</a> <code>{user_id}</code>. <b>Внимание! Если бот, после введения Вашего ответа, не подтвердит доставку, повторите операцию.</b>'
     ANSWER_RESPONSE = 'Ответ доставлен.'
     MESSAGE_FROM_USER = """Сообщение от пользователя <a href="tg://user?id={user_id}">пользователя</a> <code>{user_id}</code>
