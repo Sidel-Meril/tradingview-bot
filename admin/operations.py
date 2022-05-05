@@ -65,7 +65,7 @@ class Admin:
 
     def help(self, update, _):
         user_id = update.message.chat.id
-        self.msg.send_message(user_id, AdminText.HELP.format(user_id=user_id))
+        self.updater.bot.send_message(user_id, AdminText.HELP.format(user_id=user_id), parse_mode='HTML')
 
     @simple_request
     def whois(self, update, _, example = ''):
@@ -159,6 +159,57 @@ class Admin:
                                      AdminText.PAY_DECLINED.format(user_id=user_id))
 
     @open_db
+    def accept(self, user_id):
+        self.ldb = pg.Database(self.db)
+        price, duration, payment_data = int(self.ldb.get_setting('price')), \
+                                        int(self.ldb.get_setting('term')), \
+                                        self.ldb.get_setting('payment')
+        _duration = duration * 86280
+        self.ldb.edit_user_by_id(int(user_id), 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp()) + _duration)
+        self.ldb.close()
+        self.msg.send_message(user_id,
+                              self.Text.PAY_ACCEPTED.format(
+                                  date_str = date.fromtimestamp(int(datetime.now().timestamp()) + _duration).isoformat()
+                              )
+                              )
+        for admin_id in self.admins:
+            self.msg.send_message(admin_id,
+                                     AdminText.PAY_ACCEPTED.format(user_id=user_id,
+                                                                   date_str = date.fromtimestamp(int(datetime.now().timestamp()) + _duration).isoformat()))
+
+    @open_db
+    def gift(self, user_id, gift):
+        self.ldb = pg.Database(self.db)
+        price, _, payment_data = int(self.ldb.get_setting('price')), \
+                                        int(self.ldb.get_setting('term')), \
+                                        self.ldb.get_setting('payment')
+        _duration = int(gift) * 86280
+        self.ldb.edit_user_by_id(int(user_id), 'paid', int(datetime.now().timestamp()), int(datetime.now().timestamp()) + _duration)
+        self.ldb.close()
+        self.msg.send_message(user_id,
+                              AdminText.PAY_GIFTED.format(days = gift,
+                                  date_str = date.fromtimestamp(int(datetime.now().timestamp()) + _duration).isoformat()
+                              )
+                              )
+        for admin_id in self.admins:
+            self.msg.send_message(admin_id,
+                                     AdminText.PAY_ACCEPTED.format(user_id=user_id,
+                                                                   date_str = date.fromtimestamp(int(datetime.now().timestamp()) + _duration).isoformat()))
+
+    def accept_pay(self, update, _):
+        _, user_id = update.message.text.split(' ')
+        self.accept(user_id)
+
+    def decline_pay(self, update, _):
+        _, user_id = update.message.text.split(' ')
+        self.decline(user_id)
+
+    def gift_pay(self, update, _):
+        _, user_id, days = update.message.text.split(' ')
+        self.gift(user_id, days)
+
+
+    @open_db
     def get_paid(self, admin_id):
         data = self.ldb.get_users()
         paid_users = list(filter(lambda x: x != None, [row if row[1] == 'paid' else None for row in data]))
@@ -231,7 +282,7 @@ class Admin:
         self.ldb = pg.Database(self.db)
         self.ldb.change_settings(self.setting_label_to_edit, value)
         self.ldb.close()
-        self.msg.send_message(admin_id, AdminText.TEXT_EDITED.format(setting_label = self.setting_label_to_edit, value = value))
+        self.updater.bot.send_message(admin_id, AdminText.TEXT_EDITED.format(setting_label = self.setting_label_to_edit, value = value))
         self.Text = Text()
         return self.conversations['END']
 

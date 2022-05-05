@@ -196,11 +196,10 @@ class User:
     def ask_response(self, update, _):
         user_id = update.message.chat.id
         user_message = update.message.text
-        keyboard = self.board.inline_keyboard_button(self.Text.format_buttons(AdminText.REPLY_BUTTON, user_id))
 
         for admin_id in self.admins:
-            self.msg.send_message(admin_id, AdminText.MESSAGE_FROM_USER.format(user_id = user_id, message = user_message),
-                                  markup=keyboard)
+            self.msg.send_message(admin_id, AdminText.MESSAGE_FROM_USER.format(user_id = user_id, message = user_message))
+
         self.msg.send_message(user_id, self.Text.ASK_RESPONSE)
         return self.conversations['END']
 
@@ -208,7 +207,6 @@ class User:
     def ask_response_with_photo(self, update, _):
         user_id = update.message.chat.id
         user_message = update.message.text
-        keyboard = self.board.inline_keyboard_button(self.Text.format_buttons(AdminText.REPLY_BUTTON, user_id))
 
         try:
             file_id = update.message.photo[-1].file_id
@@ -219,7 +217,7 @@ class User:
 
         for admin_id in self.admin:
             self.msg.send_photo(admin_id, file_id, AdminText.MESSAGE_FROM_USER.format(user_id = user_id, message = user_message),
-                                   markup=keyboard)
+                                   )
         self.msg.send_message(user_id, self.Text.ASK_RESPONSE)
         return self.conversations['END']
 

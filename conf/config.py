@@ -18,7 +18,7 @@ class LocalConfig:
     'EDITTEXT_TEXT_REQUEST':7,
     'GET_SCREENSHOT':9
     }
-
+#
 # class LocalConfig:
 #     PORT = int(os.environ.get('PORT', '8443'))
 #     DATABASE_URL = ''

@@ -25,14 +25,6 @@ class Commander:
         elif command == 'PAYREQDECLINED':
             self.User.pay_declined(data_id)
             return self.conversations['END']
-        elif command == 'ADMINPAYACCEPT':
-            self.Admin.accept(data_id)
-        elif command == 'ADMINPAYDECLINE':
-            self.Admin.decline(data_id)
-        elif command == 'REPLYTO':
-            self.Admin.user_id_to_response = data_id
-            self.Admin.answer_request(user_id)
-            return self.conversations['ANSWER_RESPONSE']
 
     def _add_conversations(self):
         self.admin_filter = Filters.chat()
@@ -64,7 +56,7 @@ class Commander:
                                                },
                                                fallbacks=[CommandHandler('cancel', self.User.cancel)]
                                                )
-        self.answer_conversation = ConversationHandler(entry_points=[CallbackQueryHandler(self.buttons), CommandHandler("answer", self.Admin.answer, filters=self.admin_filter)],
+        self.answer_conversation = ConversationHandler(entry_points=[CommandHandler("answer", self.Admin.answer, filters=self.admin_filter)],
                                                   states={
                                                       self.conversations['ANSWER_RESPONSE']: [
                                                           CommandHandler('cancel', self.User.cancel),
@@ -121,6 +113,9 @@ class Commander:
         self.dp.add_handler(CommandHandler("login", self.Admin.login, filters=self.admin_filter))
         self.dp.add_handler(CommandHandler("addadmin", self.Admin.addadmin, filters=self.admin_filter))
         self.dp.add_handler(CommandHandler("deladmin", self.Admin.deladmin, filters=self.admin_filter))
+        self.dp.add_handler(CommandHandler("decline", self.Admin.decline_pay, filters=self.admin_filter))
+        self.dp.add_handler(CommandHandler("accept", self.Admin.accept_pay, filters=self.admin_filter))
+        self.dp.add_handler(CommandHandler("gift", self.Admin.gift_pay, filters=self.admin_filter))
         self.dp.add_handler(CommandHandler("whois", self.Admin.whois, filters=self.admin_filter))
 
     def start_polling(self):
