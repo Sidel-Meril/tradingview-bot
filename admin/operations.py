@@ -271,8 +271,8 @@ class Admin:
         self.ldb = pg.Database(self.db)
         value = self.ldb.get_setting(self.setting_label_to_edit)
         self.ldb.close()
-        self.msg.send_message(admin_id, AdminText.CURRENT_VALUE.format(setting_label = self.setting_label_to_edit,
-                                                                          value = value), parse_mode='Markdown')
+        self.updater.bot.send_message(admin_id, AdminText.CURRENT_VALUE.format(setting_label = self.setting_label_to_edit,
+                                                                          value = value))
         return self.conversations['EDITTEXT_TEXT_REQUEST']
 
 
@@ -282,7 +282,7 @@ class Admin:
         self.ldb = pg.Database(self.db)
         self.ldb.change_settings(self.setting_label_to_edit, value)
         self.ldb.close()
-        self.updater.bot.send_message(admin_id, AdminText.TEXT_EDITED.format(setting_label = self.setting_label_to_edit, value = value))
+        self.msg.send_message(admin_id, AdminText.TEXT_EDITED.format(setting_label = self.setting_label_to_edit, value = value))
         self.Text = Text()
         return self.conversations['END']
 
