@@ -105,12 +105,10 @@ class User:
     def pay_response(self, update, _):
         user_id = update.message.chat.id
         print(user_id)
-        keyboard = self.Text.format_buttons(AdminText.PAY_BUTTONS, user_id)
-        reply_markup = self.board.inline_keyboard_button(keyboard)
         try:
             for admin_id in self.admins:
                 self.updater.bot.send_photo(admin_id, photo=update.message.photo[-1].file_id, caption =
-                                   AdminText.PAY_RECEIVED.format(user_id=user_id), reply_markup=reply_markup, parse_mode='html')
+                                   AdminText.SCREENSHOT_CAPTION.format(user_id=user_id), parse_mode='html')
                 print(f'Screenshot send to {admin_id}')
             self.updater.bot.send_message(user_id, self.Text.PAY_RECEIVED, parse_mode='html')
         except Exception as e:
