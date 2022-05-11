@@ -86,8 +86,9 @@ class Commander:
             fallbacks=[CommandHandler('cancel', self.User.cancel)]
         )
 
-    def check_updates(self):
-        self.User.alarm_paid(self.dp)
+    def check_updates(self,dp):
+        print('Checking...')
+        self.User.alarm_paid(dp)
 
     def _init_handlers(self):
         self._add_conversations()
