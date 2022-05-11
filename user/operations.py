@@ -44,8 +44,8 @@ class User:
             users_data = self.ldb.get_users()
             for row in users_data:
                 user_id, plan, start, expires = row
-                if plan == 'paid' and datetime.now().timestamp() > expires-86280:
-                    self.updater.bot.send_message(user_id,AdminText.ALARM.format(date_str = date.fromtimestamp(expires).isoformat()))
+                if plan == 'paid' and expires > datetime.now().timestamp() > expires-86280:
+                    self.updater.bot.send_message(user_id,AdminText.ALARM.format(date_str = date.fromtimestamp(expires).isoformat()), parse_mode='HTML')
         finally:
             self.ldb.close()
             self.ldb = None
