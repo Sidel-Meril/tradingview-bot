@@ -123,7 +123,8 @@ class Commander:
 
     def _init_queue(self):
         job_queue = self.Updater.job_queue
-        job_queue.run_repeating(self.check_updates, 60*60*6)
+        # job_queue.run_repeating(self.check_updates, 60*60*6)
+        job_queue.run_repeating(self.check_updates, 60)
 
     def start_polling(self):
         self._init_queue()
