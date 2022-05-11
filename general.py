@@ -87,7 +87,7 @@ class Commander:
         )
 
     def check_updates(self):
-        pass
+        self.User.alarm_paid()
 
     def _init_handlers(self):
         self._add_conversations()
@@ -121,12 +121,18 @@ class Commander:
         self.dp.add_handler(CommandHandler("gift", self.Admin.gift_pay, filters=self.admin_filter))
         self.dp.add_handler(CommandHandler("whois", self.Admin.whois, filters=self.admin_filter))
 
+    def _init_queue(self):
+        job_queue = self.Updater.job_queue
+        job_queue.run_repeating(self.check_updates, 60*60*6)
+
     def start_polling(self):
+        self._init_queue()
         self._init_handlers()
-        self.Updater.start_polling(10)
+        self.Updater.start_polling(5)
         self.Updater.idle()
 
     def start_webhook(self, port, token, url):
+        self._init_queue()
         self._init_handlers()
         self.Updater.start_webhook(listen="0.0.0.0",
                               port=port,
