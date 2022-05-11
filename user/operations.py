@@ -37,6 +37,22 @@ class User:
 
         return wrapper
 
+    def alarm_paid(self):
+        if datetime.now().timestamp()//86280:
+            self.ldb = pg.Database(self.db)
+            try:
+                users_data = self.ldb.get_users()
+                for row in users_data:
+                    user_id, plan, start, expires = row
+                    if plan == 'paid' and datetime.now().timestamp() > expires-86280:
+                        self.updater.bot.send_message(user_id,AdminText.ALARM.format(date_str = date.fromtimestamp(expires).isoformat()))
+            finally:
+                self.ldb.close()
+                self.ldb = None
+
+
+
+
     def _get_user(func):
         def check_user(self, update, _, *args, **kwargs):
             self.ldb = pg.Database(self.db)

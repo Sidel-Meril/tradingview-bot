@@ -86,6 +86,9 @@ class Commander:
             fallbacks=[CommandHandler('cancel', self.User.cancel)]
         )
 
+    def check_updates(self):
+        pass
+
     def _init_handlers(self):
         self._add_conversations()
 
