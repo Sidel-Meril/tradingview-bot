@@ -87,7 +87,7 @@ class Commander:
         )
 
     def check_updates(self):
-        self.User.alarm_paid()
+        self.User.alarm_paid(self.dp)
 
     def _init_handlers(self):
         self._add_conversations()

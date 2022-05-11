@@ -37,7 +37,7 @@ class User:
 
         return wrapper
 
-    def alarm_paid(self):
+    def alarm_paid(self, _):
         # if datetime.now().timestamp()//86280:
         self.ldb = pg.Database(self.db)
         try:
