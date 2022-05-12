@@ -124,9 +124,8 @@ class Commander:
 
     def _init_queue(self):
         job_queue = self.Updater.job_queue
-        # job_queue.run_repeating(self.check_updates, 60*60*6)
-        # job_queue.run_repeating(self.check_updates,interval=10,first=0.0)
-        job_queue.run_daily(self.check_updates,self.User.alarm_time)
+        job_queue.run_daily(self.check_updates,self.User.alarm_time[0])
+        job_queue.run_daily(self.check_updates,self.User.alarm_time[1])
 
     def start_polling(self):
         self._init_queue()
