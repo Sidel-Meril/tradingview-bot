@@ -20,7 +20,7 @@ class User:
         self.ldb = None
         self.admins = None
         self.pairs = None
-        self.alarm_time = time(13, 00, 00, 000000)
+        self.alarm_time = time(13, 3, 00, 000000)
 
     def _open_db(func):
         def wrapper(self,update, _, *args, **kwargs):
