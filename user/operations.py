@@ -5,7 +5,7 @@ import interfaces.tradingview
 from interfaces.localtelegram import operations as tg
 from messages import UserMessages as Text
 from messages import AdminMessages as AdminText
-from datetime import datetime, date
+from datetime import datetime, date, time
 import json
 import interfaces.tradingview as tradingview
 
@@ -20,6 +20,7 @@ class User:
         self.ldb = None
         self.admins = None
         self.pairs = None
+        self.alarm_time = time(13, 00, 00, 000000)
 
     def _open_db(func):
         def wrapper(self,update, _, *args, **kwargs):
