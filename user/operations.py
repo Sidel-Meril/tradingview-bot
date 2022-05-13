@@ -159,6 +159,8 @@ class User:
             self.msg.send_message(update.message.chat.id,
                                   self.Text.SUBSCRIBE_EXPIRED)
             return self.conversations['END']
+        elif user_data[1] == 'free':
+            self.msg.send_message(Text.ACCESS_DENIED)
         else:
             self.msg.send_message(update.message.chat.id, self.Text.REQUEST)
             return self.conversations['GET_SCREENSHOT']
